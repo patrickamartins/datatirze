@@ -3,10 +3,18 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
+const multer = require("multer");
 const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 8 * 1024 * 1024
+  }
+});
 
 const PRODUTOS = [
   "Gluconex 15mg 4 Ampolas",
@@ -73,7 +81,7 @@ const SINTOMAS_NEGATIVOS = [
   "Perda de massa magra",
   "Ganho de peso",
   "Aumento da fome",
-  "Compulsão alimentar",
+  "Compulsão alimentar"
 ];
 
 const DOSES = [
@@ -108,6 +116,11 @@ const DOSES = [
   "15,0mg"
 ];
 
+const LOCAIS_COMPRA = [
+  "Farmácia",
+  "Outros"
+];
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -119,12 +132,30 @@ if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL nao foi definida.");
   process.exit(1);
 }
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false }
-    : false
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false
 });
+
+async function ensureColumnExists(columnName, definition) {
+  const existsResult = await pool.query(
+    `
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'reports'
+      AND column_name = $1
+    `,
+    [columnName]
+  );
+
+  if (existsResult.rows.length === 0) {
+    await pool.query(`ALTER TABLE reports ADD COLUMN ${columnName} ${definition}`);
+  }
+}
 
 async function initDb() {
   await pool.query(`
@@ -143,6 +174,11 @@ async function initDb() {
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
+
+  await ensureColumnExists("local_compra", "TEXT");
+  await ensureColumnExists("foto_lote", "BYTEA");
+  await ensureColumnExists("foto_lote_nome", "TEXT");
+  await ensureColumnExists("foto_lote_tipo", "TEXT");
 }
 
 function getYearMonth(date = new Date()) {
@@ -158,7 +194,7 @@ function parseSintomas(input) {
 }
 
 function isNegativeReport(sintomasArray) {
-  return sintomasArray.some((s) => SINTOMAS_NEGATIVOS.includes(s));
+  return sintomasArray.some((sintoma) => SINTOMAS_NEGATIVOS.includes(sintoma));
 }
 
 function getFaixaEtaria(idade) {
@@ -173,18 +209,24 @@ function getFaixaEtaria(idade) {
   return "65+";
 }
 
-app.get("/", (req, res) => {
-  res.render("form", {
+function renderForm(res, overrides = {}) {
+  return res.render("form", {
     produtos: PRODUTOS,
     sintomas: SINTOMAS,
     doses: DOSES,
+    locaisCompra: LOCAIS_COMPRA,
     success: null,
     error: null,
-    formData: {}
+    formData: {},
+    ...overrides
   });
+}
+
+app.get("/", (req, res) => {
+  renderForm(res);
 });
 
-app.post("/submit", async (req, res) => {
+app.post("/submit", upload.single("foto_lote"), async (req, res) => {
   const {
     nome,
     email,
@@ -194,6 +236,7 @@ app.post("/submit", async (req, res) => {
     produto,
     lote,
     dose,
+    local_compra,
     observacoes
   } = req.body;
 
@@ -208,17 +251,28 @@ app.post("/submit", async (req, res) => {
     produto,
     lote,
     dose,
+    local_compra,
     observacoes,
     sintomas: sintomasArray
   };
 
-  if (!nome || !email || !telefone || !sexo || !idade || !produto || !lote) {
-    return res.status(400).render("form", {
-      produtos: PRODUTOS,
-      sintomas: SINTOMAS,
-      doses: DOSES,
-      success: null,
+  if (!nome || !email || !telefone || !sexo || !idade || !produto || !lote || !local_compra) {
+    return renderForm(res.status(400), {
       error: "Preencha todos os campos obrigatórios.",
+      formData
+    });
+  }
+
+  if (!req.file) {
+    return renderForm(res.status(400), {
+      error: "A foto do lote da ampola é obrigatória.",
+      formData
+    });
+  }
+
+  if (!req.file.mimetype || !req.file.mimetype.startsWith("image/")) {
+    return renderForm(res.status(400), {
+      error: "Envie uma imagem válida para a foto do lote.",
       formData
     });
   }
@@ -226,68 +280,74 @@ app.post("/submit", async (req, res) => {
   try {
     const yearMonth = getYearMonth();
 
-    const sqlCheck = `
-      SELECT id, created_at
+    const checkResult = await pool.query(
+      `
+      SELECT id
       FROM reports
       WHERE email = $1
         AND telefone = $2
         AND produto = $3
         AND TO_CHAR(created_at, 'YYYY-MM') = $4
       LIMIT 1
-    `;
-
-    const checkResult = await pool.query(sqlCheck, [
-      email,
-      telefone,
-      produto,
-      yearMonth
-    ]);
+      `,
+      [email, telefone, produto, yearMonth]
+    );
 
     if (checkResult.rows.length > 0) {
-      return res.status(400).render("form", {
-        produtos: PRODUTOS,
-        sintomas: SINTOMAS,
-        doses: DOSES,
-        success: null,
+      return renderForm(res.status(400), {
         error: `Você já registrou um relato para o produto "${produto}" neste mês.`,
         formData
       });
     }
 
-    const sqlInsert = `
+    await pool.query(
+      `
       INSERT INTO reports
-      (nome, email, telefone, sexo, idade, produto, lote, dose, sintomas, observacoes, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-    `;
+      (
+        nome,
+        email,
+        telefone,
+        sexo,
+        idade,
+        produto,
+        lote,
+        dose,
+        local_compra,
+        sintomas,
+        observacoes,
+        foto_lote,
+        foto_lote_nome,
+        foto_lote_tipo,
+        created_at
+      )
+      VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+      `,
+      [
+        nome,
+        email,
+        telefone,
+        sexo,
+        parseInt(idade, 10),
+        produto,
+        parseInt(lote, 10),
+        dose || null,
+        local_compra,
+        JSON.stringify(sintomasArray),
+        observacoes || "",
+        req.file.buffer,
+        req.file.originalname || null,
+        req.file.mimetype || null
+      ]
+    );
 
-    await pool.query(sqlInsert, [
-      nome,
-      email,
-      telefone,
-      sexo,
-      parseInt(idade, 10),
-      produto,
-      parseInt(lote, 10),
-      dose || null,
-      JSON.stringify(sintomasArray),
-      observacoes || ""
-    ]);
-
-    return res.render("form", {
-      produtos: PRODUTOS,
-      sintomas: SINTOMAS,
-      doses: DOSES,
+    return renderForm(res, {
       success: "Relato enviado com sucesso.",
-      error: null,
       formData: {}
     });
   } catch (err) {
     console.error("Erro no submit:", err);
-    return res.status(500).render("form", {
-      produtos: PRODUTOS,
-      sintomas: SINTOMAS,
-      doses: DOSES,
-      success: null,
+    return renderForm(res.status(500), {
       error: "Erro ao salvar o formulário.",
       formData
     });
@@ -363,7 +423,9 @@ app.get("/api/dashboard", async (req, res) => {
       total: item.total,
       semNegativo: item.semNegativo,
       aceitacaoPercentual:
-        item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0
+        item.total > 0
+          ? Number(((item.semNegativo / item.total) * 100).toFixed(2))
+          : 0
     }));
 
     const symptomCount = {};
@@ -422,26 +484,26 @@ app.get("/api/dashboard", async (req, res) => {
       total: faixaMap[faixa]
     }));
 
-    const dosesDisponiveis = [...new Set(
-      rows
-        .map((r) => r.dose)
-        .filter((d) => d !== null && d !== undefined && d !== "")
-    )].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+    const dosesDisponiveis = [
+      ...new Set(
+        rows
+          .map((r) => r.dose)
+          .filter((d) => d !== null && d !== undefined && d !== "")
+      )
+    ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
 
-    const sexosDisponiveis = [...new Set(
-      rows
-        .map((r) => r.sexo)
-        .filter(Boolean)
-    )].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+    const sexosDisponiveis = [
+      ...new Set(rows.map((r) => r.sexo).filter(Boolean))
+    ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
 
     const tabela = reports.map((r) => ({
-      id: r.id,
       sexo: r.sexo,
       idade: r.idade,
       faixaEtaria: r.faixaEtaria,
       produto: r.produto,
       lote: r.lote,
       dose: r.dose,
+      local_compra: r.local_compra,
       sintomas: r.sintomas.join(", "),
       observacoes: r.observacoes,
       created_at: r.created_at

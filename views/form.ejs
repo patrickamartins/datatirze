@@ -28,7 +28,7 @@
     <div class="header">
       <div class="brand">
         <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-        <h1></h1>
+        <h1>Informe seu uso</h1>
       </div>
       <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
     </div>
@@ -41,7 +41,7 @@
       <div class="alert error"><%= error %></div>
     <% } %>
 
-    <form action="/submit" method="POST" class="card form-grid">
+    <form action="/submit" method="POST" enctype="multipart/form-data" class="card form-grid">
       <div>
         <label>Nome *</label>
         <input type="text" name="nome" required value="<%= formData.nome || '' %>" />
@@ -100,6 +100,32 @@
             </option>
           <% }) %>
         </select>
+      </div>
+
+      <div>
+        <label>Local onde comprou *</label>
+        <select name="local_compra" required>
+          <option value="">Selecione</option>
+          <% locaisCompra.forEach(local => { %>
+            <option value="<%= local %>" <%= formData.local_compra === local ? 'selected' : '' %>>
+              <%= local %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="full">
+        <label class="label-with-help">
+          <span>Foto do lote da ampola *</span>
+          <span class="help-tooltip">
+            ?
+            <span class="help-tooltip-content">
+              <img src="/images/exemplo-lote.png" alt="Exemplo de foto do lote" class="help-example-image" />
+              <span class="help-tooltip-text">Envie uma foto nítida mostrando o lote impresso na ampola ou embalagem.</span>
+            </span>
+          </span>
+        </label>
+        <input type="file" name="foto_lote" accept="image/*" required />
       </div>
 
       <div class="full">

@@ -25,21 +25,46 @@
   </noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-
-  <div class="card filters-card">
-  <h2>Filtros</h2>
-  <div class="filters-grid">
-    ...
-  </div>
-</div>
-
   <div class="container">
     <div class="header">
       <div class="brand">
         <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-        <h1></h1>
+        <h1>Dashboard DataTirze</h1>
       </div>
       <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
+    </div>
+
+    <div class="card filters-card">
+      <h2>Filtros</h2>
+      <div class="filters-grid">
+        <div>
+          <label for="filtroProduto">Marca / Produto</label>
+          <select id="filtroProduto">
+            <option value="">Todos</option>
+            <% produtos.forEach(produto => { %>
+              <option value="<%= produto %>"><%= produto %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <label for="filtroDose">Dosagem</label>
+          <select id="filtroDose">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filtroSexo">Gênero</label>
+          <select id="filtroSexo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button id="btnLimpar" class="btn" type="button">Limpar filtros</button>
+        </div>
+      </div>
     </div>
 
     <div class="grid-dashboard">
@@ -51,6 +76,11 @@
       <div class="card">
         <h2>Sintomas mais comuns</h2>
         <canvas id="chartSymptoms"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Faixa etária</h2>
+        <canvas id="chartAge"></canvas>
       </div>
 
       <div class="card full">
@@ -65,6 +95,8 @@
             <thead>
               <tr>
                 <th>Sexo</th>
+                <th>Idade</th>
+                <th>Faixa etária</th>
                 <th>Produto</th>
                 <th>Lote</th>
                 <th>Dose</th>
@@ -84,14 +116,61 @@
     let chartAcceptanceInstance = null;
     let chartSymptomsInstance = null;
     let chartLotsInstance = null;
+    let chartAgeInstance = null;
 
     async function loadDashboard() {
-      const response = await fetch("/api/dashboard");
+      const produto = document.getElementById("filtroProduto").value;
+      const dose = document.getElementById("filtroDose").value;
+      const sexo = document.getElementById("filtroSexo").value;
+
+      const params = new URLSearchParams();
+      if (produto) params.append("produto", produto);
+      if (dose) params.append("dose", dose);
+      if (sexo) params.append("sexo", sexo);
+
+      const response = await fetch(`/api/dashboard?${params.toString()}`);
       const data = await response.json();
 
+      preencherFiltros(data.filtros);
+      renderCharts(data);
+      renderTabela(data.tabela);
+    }
+
+    function preencherFiltros(filtros) {
+      const doseSelect = document.getElementById("filtroDose");
+      const sexoSelect = document.getElementById("filtroSexo");
+
+      const doseAtual = doseSelect.value;
+      const sexoAtual = sexoSelect.value;
+
+      doseSelect.innerHTML = '<option value="">Todas</option>';
+      filtros.doses.forEach((dose) => {
+        const option = document.createElement("option");
+        option.value = dose;
+        option.textContent = dose;
+        if (String(dose) === String(doseAtual)) option.selected = true;
+        doseSelect.appendChild(option);
+      });
+
+      sexoSelect.innerHTML = '<option value="">Todos</option>';
+      filtros.sexos.forEach((sexo) => {
+        const option = document.createElement("option");
+        option.value = sexo;
+        option.textContent = sexo;
+        if (String(sexo) === String(sexoAtual)) option.selected = true;
+        sexoSelect.appendChild(option);
+      });
+    }
+
+    function destroyCharts() {
       if (chartAcceptanceInstance) chartAcceptanceInstance.destroy();
       if (chartSymptomsInstance) chartSymptomsInstance.destroy();
       if (chartLotsInstance) chartLotsInstance.destroy();
+      if (chartAgeInstance) chartAgeInstance.destroy();
+    }
+
+    function renderCharts(data) {
+      destroyCharts();
 
       const acceptanceLabels = data.acceptance.map(
         item => `${item.produto} - ${item.sexo}`
@@ -137,6 +216,28 @@
         }
       });
 
+      const ageLabels = data.faixasEtarias.map(item => item.faixa);
+      const ageValues = data.faixasEtarias.map(item => item.total);
+
+      chartAgeInstance = new Chart(document.getElementById("chartAge"), {
+        type: "bar",
+        data: {
+          labels: ageLabels,
+          datasets: [{
+            label: "Quantidade de relatos",
+            data: ageValues
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
       const lotLabels = data.lotesNegativos.map(
         item => `${item.produto} - Lote ${item.lote}`
       );
@@ -158,14 +259,18 @@
           indexAxis: "y"
         }
       });
+    }
 
+    function renderTabela(tabela) {
       const tbody = document.querySelector("#reportsTable tbody");
       tbody.innerHTML = "";
 
-      data.tabela.forEach(item => {
+      tabela.forEach(item => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${item.sexo}</td>
+          <td>${item.idade ?? ""}</td>
+          <td>${item.faixaEtaria ?? ""}</td>
           <td>${item.produto}</td>
           <td>${item.lote}</td>
           <td>${item.dose ?? ""}</td>
@@ -177,6 +282,20 @@
       });
     }
 
+    function aplicarFiltrosAutomaticamente() {
+      document.getElementById("filtroProduto").addEventListener("change", loadDashboard);
+      document.getElementById("filtroDose").addEventListener("change", loadDashboard);
+      document.getElementById("filtroSexo").addEventListener("change", loadDashboard);
+    }
+
+    document.getElementById("btnLimpar").addEventListener("click", () => {
+      document.getElementById("filtroProduto").value = "";
+      document.getElementById("filtroDose").value = "";
+      document.getElementById("filtroSexo").value = "";
+      loadDashboard();
+    });
+
+    aplicarFiltrosAutomaticamente();
     loadDashboard();
   </script>
 </body>
