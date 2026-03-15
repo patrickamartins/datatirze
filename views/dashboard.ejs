@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Google Tag Manager -->
+  <script>
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TRRDTHW4');
+  </script>
+  <!-- End Google Tag Manager -->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataTirze</title>
@@ -8,9 +18,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TRRDTHW4"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe>
+  </noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
   <div class="container">
     <div class="header">
-      <h1>DataTirze</h1>
+      <div class="brand">
+        <img src="/images/logo-datatirze.svg" alt="DataTirze" class="logo" />
+        <h1>DataTirze</h1>
+      </div>
       <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
     </div>
 
@@ -36,10 +56,6 @@
           <table id="reportsTable">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Telefone</th>
                 <th>Sexo</th>
                 <th>Produto</th>
                 <th>Lote</th>
@@ -57,11 +73,18 @@
   </div>
 
   <script>
+    let chartAcceptanceInstance = null;
+    let chartSymptomsInstance = null;
+    let chartLotsInstance = null;
+
     async function loadDashboard() {
       const response = await fetch("/api/dashboard");
       const data = await response.json();
 
-      // Aceitação por produto e sexo
+      if (chartAcceptanceInstance) chartAcceptanceInstance.destroy();
+      if (chartSymptomsInstance) chartSymptomsInstance.destroy();
+      if (chartLotsInstance) chartLotsInstance.destroy();
+
       const acceptanceLabels = data.acceptance.map(
         item => `${item.produto} - ${item.sexo}`
       );
@@ -69,7 +92,7 @@
         item => item.aceitacaoPercentual
       );
 
-      new Chart(document.getElementById("chartAcceptance"), {
+      chartAcceptanceInstance = new Chart(document.getElementById("chartAcceptance"), {
         type: "bar",
         data: {
           labels: acceptanceLabels,
@@ -89,11 +112,10 @@
         }
       });
 
-      // Sintomas mais comuns
       const symptomLabels = data.sintomasComuns.map(item => item.sintoma);
       const symptomValues = data.sintomasComuns.map(item => item.total);
 
-      new Chart(document.getElementById("chartSymptoms"), {
+      chartSymptomsInstance = new Chart(document.getElementById("chartSymptoms"), {
         type: "pie",
         data: {
           labels: symptomLabels,
@@ -107,7 +129,6 @@
         }
       });
 
-      // Lotes negativos
       const lotLabels = data.lotesNegativos.map(
         item => `${item.produto} - Lote ${item.lote}`
       );
@@ -115,7 +136,7 @@
         item => item.totalNegativos
       );
 
-      new Chart(document.getElementById("chartLots"), {
+      chartLotsInstance = new Chart(document.getElementById("chartLots"), {
         type: "bar",
         data: {
           labels: lotLabels,
@@ -130,17 +151,12 @@
         }
       });
 
-      // Tabela
       const tbody = document.querySelector("#reportsTable tbody");
       tbody.innerHTML = "";
 
       data.tabela.forEach(item => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${item.id}</td>
-          <td>${item.nome}</td>
-          <td>${item.email}</td>
-          <td>${item.telefone}</td>
           <td>${item.sexo}</td>
           <td>${item.produto}</td>
           <td>${item.lote}</td>

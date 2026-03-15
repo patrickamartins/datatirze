@@ -1,3 +1,15 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
 * {
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;

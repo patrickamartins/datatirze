@@ -1,15 +1,35 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Google Tag Manager -->
+  <script>
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TRRDTHW4');
+  </script>
+  <!-- End Google Tag Manager -->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DataTirze</title>
+  <title>DataTirze - Metabolizando Dados em Inteligência</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TRRDTHW4"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe>
+  </noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
   <div class="container">
     <div class="header">
-      <h1>Pesquisa de Produto</h1>
+      <div class="brand">
+        <img src="/images/logo-datatirze.svg" alt="DataTirze" class="logo" />
+        <h1>Informe seu uso</h1>
+      </div>
       <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
     </div>
 
@@ -49,6 +69,11 @@
       </div>
 
       <div>
+        <label>Idade *</label>
+        <input type="number" name="idade" min="14" required value="<%= formData.idade || '' %>" />
+      </div>
+
+      <div>
         <label>Qual produto? *</label>
         <select name="produto" required>
           <option value="">Selecione</option>
@@ -65,17 +90,17 @@
         <input type="number" name="lote" required value="<%= formData.lote || '' %>" />
       </div>
 
-     <div>
-  <label>Qual dose utilizada?</label>
-  <select name="dose">
-    <option value="">Selecione</option>
-    <% doses.forEach(dose => { %>
-      <option value="<%= dose %>" <%= formData.dose === dose ? 'selected' : '' %>>
-        <%= dose %>
-      </option>
-    <% }) %>
-  </select>
-</div>
+      <div>
+        <label>Qual dose utilizada?</label>
+        <select name="dose">
+          <option value="">Selecione</option>
+          <% doses.forEach(dose => { %>
+            <option value="<%= dose %>" <%= formData.dose === dose ? 'selected' : '' %>>
+              <%= dose %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
 
       <div class="full">
         <label>Quais sintomas?</label>
