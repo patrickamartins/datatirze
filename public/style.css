@@ -1,18 +1,11 @@
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  height: 180px;
-  width: auto;
-  object-fit: contain;
-}
 
 * {
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -22,6 +15,7 @@ body {
 }
 
 .container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
@@ -36,8 +30,33 @@ body {
   margin-bottom: 20px;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.logo {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
 h1, h2 {
   margin: 0 0 12px;
+}
+
+h2 {
+  font-size: 20px;
 }
 
 .card {
@@ -49,7 +68,7 @@ h1, h2 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -61,6 +80,7 @@ label {
   display: block;
   margin-bottom: 8px;
   font-weight: bold;
+  font-size: 14px;
 }
 
 input,
@@ -68,14 +88,17 @@ select,
 textarea,
 button {
   width: 100%;
+  min-height: 44px;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 16px;
+  background: #fff;
 }
 
 textarea {
   resize: vertical;
+  min-height: 120px;
 }
 
 .btn {
@@ -84,8 +107,14 @@ textarea {
   border: none;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 15px;
 }
 
 .btn:hover {
@@ -103,6 +132,7 @@ textarea {
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
+  font-size: 14px;
 }
 
 .alert.success {
@@ -117,47 +147,36 @@ textarea {
 
 .checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .checkbox-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   font-weight: normal;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
 }
 
 .checkbox-item input {
   width: auto;
+  min-height: auto;
+  margin-top: 2px;
+}
+
+.checkbox-item span {
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .grid-dashboard {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1000px;
-}
-
-table th,
-table td {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-  vertical-align: top;
-}
-
-table th {
-  background: #f8fafc;
 }
 
 .filters-card {
@@ -166,7 +185,7 @@ table th {
 
 .filters-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 180px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: end;
 }
@@ -176,11 +195,146 @@ table th {
   align-items: end;
 }
 
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  background: #fff;
+}
+
+table th,
+table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+table th {
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+canvas {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .container {
+    padding: 18px;
+  }
+
+  .grid-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brand h1 {
+    font-size: 24px;
+  }
+}
+
+/* Celulares */
 @media (max-width: 768px) {
+  .container {
+    padding: 14px;
+  }
+
+  .header {
+    align-items: stretch;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .logo {
+    height: 40px;
+  }
+
+  .header .btn,
+  .header .btn-secondary {
+    width: 100%;
+  }
+
   .form-grid,
-  .grid-dashboard,
   .checkbox-grid,
   .filters-grid {
     grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  table {
+    min-width: 700px;
+  }
+}
+
+/* Celulares menores */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .brand {
+    align-items: center;
+  }
+
+  .brand h1 {
+    font-size: 20px;
+  }
+
+  .logo {
+    height: 34px;
+  }
+
+  input,
+  select,
+  textarea,
+  button,
+  .btn {
+    font-size: 16px;
+  }
+
+  label {
+    font-size: 13px;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  table th,
+  table td {
+    font-size: 13px;
+    padding: 8px;
   }
 }
