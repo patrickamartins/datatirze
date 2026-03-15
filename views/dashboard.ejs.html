@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard da Pesquisa</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Dashboard da Pesquisa</h1>
+      <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
+    </div>
+
+    <div class="card filters-card">
+      <h2>Filtros</h2>
+      <div class="filters-grid">
+        <div>
+          <label>Marca / Produto</label>
+          <select id="filtroProduto">
+            <option value="">Todos</option>
+            <% produtos.forEach(produto => { %>
+              <option value="<%= produto %>"><%= produto %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <label>Dosagem</label>
+          <select id="filtroDose">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Gênero</label>
+          <select id="filtroSexo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button id="btnLimpar" class="btn">Limpar filtros</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-dashboard">
+      <div class="card">
+        <h2>Aceitação por produto e sexo</h2>
+        <canvas id="chartAcceptance"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Sintomas mais comuns</h2>
+        <canvas id="chartSymptoms"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Faixa etária</h2>
+        <canvas id="chartAge"></canvas>
+      </div>
+
+      <div class="card full">
+        <h2>Lotes com mais sintomas negativos</h2>
+        <canvas id="chartLots"></canvas>
+      </div>
+
+      <div class="card full">
+        <h2>Registros enviados</h2>
+        <div class="table-wrapper">
+          <table id="reportsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Sexo</th>
+                <th>Idade</th>
+                <th>Faixa etária</th>
+                <th>Produto</th>
+                <th>Lote</th>
+                <th>Dose</th>
+                <th>Sintomas</th>
+                <th>Observações</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chartAcceptanceInstance = null;
+    let chartSymptomsInstance = null;
+    let chartLotsInstance = null;
+    let chartAgeInstance = null;
+
+    async function loadDashboard() {
+      const produto = document.getElementById("filtroProduto").value;
+      const dose = document.getElementById("filtroDose").value;
+      const sexo = document.getElementById("filtroSexo").value;
+
+      const params = new URLSearchParams();
+      if (produto) params.append("produto", produto);
+      if (dose) params.append("dose", dose);
+      if (sexo) params.append("sexo", sexo);
+
+      const response = await fetch(`/api/dashboard?${params.toString()}`);
+      const data = await response.json();
+
+      preencherFiltros(data.filtros);
+      renderCharts(data);
+      renderTabela(data.tabela);
+    }
+
+    function preencherFiltros(filtros) {
+      const doseSelect = document.getElementById("filtroDose");
+      const sexoSelect = document.getElementById("filtroSexo");
+
+      const doseAtual = doseSelect.value;
+      const sexoAtual = sexoSelect.value;
+
+      doseSelect.innerHTML = '<option value="">Todas</option>';
+      filtros.doses.forEach((dose) => {
+        const option = document.createElement("option");
+        option.value = dose;
+        option.textContent = dose;
+        if (String(dose) === String(doseAtual)) option.selected = true;
+        doseSelect.appendChild(option);
+      });
+
+      sexoSelect.innerHTML = '<option value="">Todos</option>';
+      filtros.sexos.forEach((sexo) => {
+        const option = document.createElement("option");
+        option.value = sexo;
+        option.textContent = sexo;
+        if (String(sexo) === String(sexoAtual)) option.selected = true;
+        sexoSelect.appendChild(option);
+      });
+    }
+
+    function destroyCharts() {
+      if (chartAcceptanceInstance) chartAcceptanceInstance.destroy();
+      if (chartSymptomsInstance) chartSymptomsInstance.destroy();
+      if (chartLotsInstance) chartLotsInstance.destroy();
+      if (chartAgeInstance) chartAgeInstance.destroy();
+    }
+
+    function renderCharts(data) {
+      destroyCharts();
+
+      const acceptanceLabels = data.acceptance.map(
+        item => `${item.produto} - ${item.sexo}`
+      );
+      const acceptanceValues = data.acceptance.map(
+        item => item.aceitacaoPercentual
+      );
+
+      chartAcceptanceInstance = new Chart(document.getElementById("chartAcceptance"), {
+        type: "bar",
+        data: {
+          labels: acceptanceLabels,
+          datasets: [{
+            label: "% de aceitação",
+            data: acceptanceValues
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+
+      const symptomLabels = data.sintomasComuns.map(item => item.sintoma);
+      const symptomValues = data.sintomasComuns.map(item => item.total);
+
+      chartSymptomsInstance = new Chart(document.getElementById("chartSymptoms"), {
+        type: "pie",
+        data: {
+          labels: symptomLabels,
+          datasets: [{
+            label: "Quantidade",
+            data: symptomValues
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+      const ageLabels = data.faixasEtarias.map(item => item.faixa);
+      const ageValues = data.faixasEtarias.map(item => item.total);
+
+      chartAgeInstance = new Chart(document.getElementById("chartAge"), {
+        type: "bar",
+        data: {
+          labels: ageLabels,
+          datasets: [{
+            label: "Quantidade de relatos",
+            data: ageValues
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      const lotLabels = data.lotesNegativos.map(
+        item => `${item.produto} - Lote ${item.lote}`
+      );
+      const lotValues = data.lotesNegativos.map(
+        item => item.totalNegativos
+      );
+
+      chartLotsInstance = new Chart(document.getElementById("chartLots"), {
+        type: "bar",
+        data: {
+          labels: lotLabels,
+          datasets: [{
+            label: "Relatos negativos",
+            data: lotValues
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: "y"
+        }
+      });
+    }
+
+    function renderTabela(tabela) {
+      const tbody = document.querySelector("#reportsTable tbody");
+      tbody.innerHTML = "";
+
+      tabela.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.sexo}</td>
+          <td>${item.idade ?? ""}</td>
+          <td>${item.faixaEtaria ?? ""}</td>
+          <td>${item.produto}</td>
+          <td>${item.lote}</td>
+          <td>${item.dose ?? ""}</td>
+          <td>${item.sintomas}</td>
+          <td>${item.observacoes || ""}</td>
+          <td>${new Date(item.created_at).toLocaleString("pt-BR")}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function aplicarFiltrosAutomaticamente() {
+      document.getElementById("filtroProduto").addEventListener("change", loadDashboard);
+      document.getElementById("filtroDose").addEventListener("change", loadDashboard);
+      document.getElementById("filtroSexo").addEventListener("change", loadDashboard);
+    }
+
+    document.getElementById("btnLimpar").addEventListener("click", () => {
+      document.getElementById("filtroProduto").value = "";
+      document.getElementById("filtroDose").value = "";
+      document.getElementById("filtroSexo").value = "";
+      loadDashboard();
+    });
+
+    aplicarFiltrosAutomaticamente();
+    loadDashboard();
+  </script>
+</body>
+</html>

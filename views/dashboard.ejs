@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataTirze</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DataTirze</h1>
+      <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
+    </div>
+
+    <div class="grid-dashboard">
+      <div class="card">
+        <h2>Aceitação por produto e sexo</h2>
+        <canvas id="chartAcceptance"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Sintomas mais comuns</h2>
+        <canvas id="chartSymptoms"></canvas>
+      </div>
+
+      <div class="card full">
+        <h2>Lotes com mais sintomas negativos</h2>
+        <canvas id="chartLots"></canvas>
+      </div>
+
+      <div class="card full">
+        <h2>Registros enviados</h2>
+        <div class="table-wrapper">
+          <table id="reportsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Sexo</th>
+                <th>Produto</th>
+                <th>Lote</th>
+                <th>Dose</th>
+                <th>Sintomas</th>
+                <th>Observações</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadDashboard() {
+      const response = await fetch("/api/dashboard");
+      const data = await response.json();
+
+      // Aceitação por produto e sexo
+      const acceptanceLabels = data.acceptance.map(
+        item => `${item.produto} - ${item.sexo}`
+      );
+      const acceptanceValues = data.acceptance.map(
+        item => item.aceitacaoPercentual
+      );
+
+      new Chart(document.getElementById("chartAcceptance"), {
+        type: "bar",
+        data: {
+          labels: acceptanceLabels,
+          datasets: [{
+            label: "% de aceitação",
+            data: acceptanceValues
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+
+      // Sintomas mais comuns
+      const symptomLabels = data.sintomasComuns.map(item => item.sintoma);
+      const symptomValues = data.sintomasComuns.map(item => item.total);
+
+      new Chart(document.getElementById("chartSymptoms"), {
+        type: "pie",
+        data: {
+          labels: symptomLabels,
+          datasets: [{
+            label: "Quantidade",
+            data: symptomValues
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+      // Lotes negativos
+      const lotLabels = data.lotesNegativos.map(
+        item => `${item.produto} - Lote ${item.lote}`
+      );
+      const lotValues = data.lotesNegativos.map(
+        item => item.totalNegativos
+      );
+
+      new Chart(document.getElementById("chartLots"), {
+        type: "bar",
+        data: {
+          labels: lotLabels,
+          datasets: [{
+            label: "Relatos negativos",
+            data: lotValues
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: "y"
+        }
+      });
+
+      // Tabela
+      const tbody = document.querySelector("#reportsTable tbody");
+      tbody.innerHTML = "";
+
+      data.tabela.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.nome}</td>
+          <td>${item.email}</td>
+          <td>${item.telefone}</td>
+          <td>${item.sexo}</td>
+          <td>${item.produto}</td>
+          <td>${item.lote}</td>
+          <td>${item.dose ?? ""}</td>
+          <td>${item.sintomas}</td>
+          <td>${item.observacoes || ""}</td>
+          <td>${new Date(item.created_at).toLocaleString("pt-BR")}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

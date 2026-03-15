@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pesquisa de Produto</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Pesquisa de Produto</h1>
+      <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert success"><%= success %></div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert error"><%= error %></div>
+    <% } %>
+
+    <form action="/submit" method="POST" class="card form-grid">
+      <div>
+        <label>Nome *</label>
+        <input type="text" name="nome" required value="<%= formData.nome || '' %>" />
+      </div>
+
+      <div>
+        <label>Email *</label>
+        <input type="email" name="email" required value="<%= formData.email || '' %>" />
+      </div>
+
+      <div>
+        <label>Telefone *</label>
+        <input type="text" name="telefone" required value="<%= formData.telefone || '' %>" />
+      </div>
+
+      <div>
+        <label>Sexo *</label>
+        <select name="sexo" required>
+          <option value="">Selecione</option>
+          <option value="Masculino" <%= formData.sexo === 'Masculino' ? 'selected' : '' %>>Masculino</option>
+          <option value="Feminino" <%= formData.sexo === 'Feminino' ? 'selected' : '' %>>Feminino</option>
+          <option value="Outro" <%= formData.sexo === 'Outro' ? 'selected' : '' %>>Outro</option>
+          <option value="Prefiro não informar" <%= formData.sexo === 'Prefiro não informar' ? 'selected' : '' %>>Prefiro não informar</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Idade *</label>
+        <input type="number" name="idade" min="14" required value="<%= formData.idade || '' %>" />
+      </div>
+
+      <div>
+        <label>Qual produto? *</label>
+        <select name="produto" required>
+          <option value="">Selecione</option>
+          <% produtos.forEach(produto => { %>
+            <option value="<%= produto %>" <%= formData.produto === produto ? 'selected' : '' %>>
+              <%= produto %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div>
+        <label>Qual lote do produto? *</label>
+        <input type="number" name="lote" required value="<%= formData.lote || '' %>" />
+      </div>
+
+     <div>
+  <label>Qual dose utilizada?</label>
+  <select name="dose">
+    <option value="">Selecione</option>
+    <% doses.forEach(dose => { %>
+      <option value="<%= dose %>" <%= formData.dose === dose ? 'selected' : '' %>>
+        <%= dose %>
+      </option>
+    <% }) %>
+  </select>
+</div>
+
+      <div class="full">
+        <label>Quais sintomas?</label>
+        <div class="checkbox-grid">
+          <% sintomas.forEach(sintoma => { %>
+            <label class="checkbox-item">
+              <input
+                type="checkbox"
+                name="sintomas"
+                value="<%= sintoma %>"
+                <%= formData.sintomas && formData.sintomas.includes(sintoma) ? 'checked' : '' %>
+              />
+              <span><%= sintoma %></span>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="full">
+        <label>Observações</label>
+        <textarea name="observacoes" rows="5"><%= formData.observacoes || '' %></textarea>
+      </div>
+
+      <div class="full">
+        <button type="submit" class="btn">Enviar</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

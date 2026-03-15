@@ -1,0 +1,16 @@
+{
+  "name": "datatirze",
+  "version": "1.0.0",
+  "description": "Sistema Datatirze com formulario e dashboard",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}
