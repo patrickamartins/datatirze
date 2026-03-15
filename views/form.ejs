@@ -65,10 +65,17 @@
         <input type="number" name="lote" required value="<%= formData.lote || '' %>" />
       </div>
 
-      <div>
-        <label>Qual dose utilizada?</label>
-        <input type="number" step="0.01" name="dose" value="<%= formData.dose || '' %>" />
-      </div>
+     <div>
+  <label>Qual dose utilizada?</label>
+  <select name="dose">
+    <option value="">Selecione</option>
+    <% doses.forEach(dose => { %>
+      <option value="<%= dose %>" <%= formData.dose === dose ? 'selected' : '' %>>
+        <%= dose %>
+      </option>
+    <% }) %>
+  </select>
+</div>
 
       <div class="full">
         <label>Quais sintomas?</label>
