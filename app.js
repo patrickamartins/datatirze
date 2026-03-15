@@ -54,7 +54,7 @@ const SINTOMAS = [
   "Perca de medidas",
   "Perca de peso",
   "Perca de massa magra",
-  "Ganho de peso";
+  "Ganho de peso",
   "Aumento da fome",
   "Compulsão alimentar",
   "Melhora na disposição",
@@ -71,7 +71,7 @@ const SINTOMAS_NEGATIVOS = [
   "Insônia",
   "Boca seca",
   "Perca de massa magra"
-  "Ganho de peso";
+  "Ganho de peso",
   "Aumento da fome",
   "Compulsão alimentar",
 ];
