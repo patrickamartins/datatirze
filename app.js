@@ -179,6 +179,10 @@ async function initDb() {
   await ensureColumnExists("foto_lote", "BYTEA");
   await ensureColumnExists("foto_lote_nome", "TEXT");
   await ensureColumnExists("foto_lote_tipo", "TEXT");
+  await ensureColumnExists("aceite_termos", "BOOLEAN DEFAULT FALSE");
+  await ensureColumnExists("aceite_privacidade", "BOOLEAN DEFAULT FALSE");
+  await ensureColumnExists("aceite_termos_em", "TIMESTAMP");
+  await ensureColumnExists("aceite_privacidade_em", "TIMESTAMP");
 }
 
 function getYearMonth(date = new Date()) {
@@ -226,6 +230,14 @@ app.get("/", (req, res) => {
   renderForm(res);
 });
 
+app.get("/termos", (req, res) => {
+  res.render("termos");
+});
+
+app.get("/privacidade", (req, res) => {
+  res.render("privacidade");
+});
+
 app.post("/submit", upload.single("foto_lote"), async (req, res) => {
   const {
     nome,
@@ -237,7 +249,9 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
     lote,
     dose,
     local_compra,
-    observacoes
+    observacoes,
+    aceite_termos,
+    aceite_privacidade
   } = req.body;
 
   const sintomasArray = parseSintomas(req.body.sintomas);
@@ -253,6 +267,8 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
     dose,
     local_compra,
     observacoes,
+    aceite_termos,
+    aceite_privacidade,
     sintomas: sintomasArray
   };
 
@@ -273,6 +289,13 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
   if (!req.file.mimetype || !req.file.mimetype.startsWith("image/")) {
     return renderForm(res.status(400), {
       error: "Envie uma imagem válida para a foto do lote.",
+      formData
+    });
+  }
+
+  if (!aceite_termos || !aceite_privacidade) {
+    return renderForm(res.status(400), {
+      error: "É obrigatório aceitar os Termos e Condições e a Política de Privacidade.",
       formData
     });
   }
@@ -318,10 +341,14 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
         foto_lote,
         foto_lote_nome,
         foto_lote_tipo,
+        aceite_termos,
+        aceite_privacidade,
+        aceite_termos_em,
+        aceite_privacidade_em,
         created_at
       )
       VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), NOW())
       `,
       [
         nome,
@@ -337,7 +364,9 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
         observacoes || "",
         req.file.buffer,
         req.file.originalname || null,
-        req.file.mimetype || null
+        req.file.mimetype || null,
+        true,
+        true
       ]
     );
 

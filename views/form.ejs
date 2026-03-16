@@ -26,12 +26,13 @@
 
   <div class="container">
     <div class="header">
-      <div class="brand">
-        <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-        <h1>Informe seu uso</h1>
-      </div>
-      <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
-    </div>
+  <div class="brand">
+    <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
+  </div>
+  <div class="header-actions">
+    <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
+  </div>
+</div>
 
     <% if (success) { %>
       <div class="alert success"><%= success %></div>
@@ -149,6 +150,36 @@
         <label>Observações</label>
         <textarea name="observacoes" rows="5"><%= formData.observacoes || '' %></textarea>
       </div>
+
+<div class="full consent-box">
+  <label class="checkbox-item consent-item">
+    <input
+      type="checkbox"
+      name="aceite_termos"
+      value="sim"
+      required
+      <%= formData.aceite_termos ? 'checked' : '' %>
+    />
+    <span>
+      Li e aceito os
+      <a href="/termos" target="_blank" rel="noopener noreferrer">Termos e Condições</a>.
+    </span>
+  </label>
+
+  <label class="checkbox-item consent-item">
+    <input
+      type="checkbox"
+      name="aceite_privacidade"
+      value="sim"
+      required
+      <%= formData.aceite_privacidade ? 'checked' : '' %>
+    />
+    <span>
+      Li e aceito a
+      <a href="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+    </span>
+  </label>
+</div>
 
       <div class="full">
         <button type="submit" class="btn">Enviar</button>
