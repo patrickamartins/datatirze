@@ -15,7 +15,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataTirze</title>
   <link rel="stylesheet" href="/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -26,296 +25,160 @@
   <!-- End Google Tag Manager (noscript) -->
 
   <div class="container">
-    <div class="header dashboard-header">
+    <div class="header">
       <div class="brand">
         <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
       </div>
-
       <div class="header-actions">
-        <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
+        <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
       </div>
     </div>
 
-    <div class="card filters-card">
-      <h2>Filtros</h2>
-      <div class="filters-grid">
-        <div>
-          <label for="filtroProduto">Marca / Produto</label>
-          <select id="filtroProduto">
-            <option value="">Todos</option>
-            <% produtos.forEach(produto => { %>
-              <option value="<%= produto %>"><%= produto %></option>
-            <% }) %>
-          </select>
-        </div>
+    <% if (success) { %>
+      <div class="alert success"><%= success %></div>
+    <% } %>
 
-        <div>
-          <label for="filtroDose">Dosagem</label>
-          <select id="filtroDose">
-            <option value="">Todas</option>
-          </select>
-        </div>
+    <% if (error) { %>
+      <div class="alert error"><%= error %></div>
+    <% } %>
 
-        <div>
-          <label for="filtroSexo">Gênero</label>
-          <select id="filtroSexo">
-            <option value="">Todos</option>
-          </select>
-        </div>
-
-        <div class="filter-actions">
-          <button id="btnLimpar" class="btn" type="button">Limpar filtros</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid-dashboard">
-      <div class="card">
-        <h2>Aceitação por produto e sexo</h2>
-        <div class="chart-box">
-          <canvas id="chartAcceptance"></canvas>
-        </div>
+    <form action="/submit" method="POST" enctype="multipart/form-data" class="card form-grid">
+      <div>
+        <label>Nome *</label>
+        <input type="text" name="nome" required value="<%= formData.nome || '' %>" />
       </div>
 
-      <div class="card">
-        <h2>Sintomas mais comuns</h2>
-        <div class="chart-box chart-box-pie">
-          <canvas id="chartSymptoms"></canvas>
+      <div>
+        <label>Email *</label>
+        <input type="email" name="email" required value="<%= formData.email || '' %>" />
+      </div>
+
+      <div>
+        <label>Telefone *</label>
+        <input type="text" name="telefone" required value="<%= formData.telefone || '' %>" />
+      </div>
+
+      <div>
+        <label>Sexo *</label>
+        <select name="sexo" required>
+          <option value="">Selecione</option>
+          <option value="Masculino" <%= formData.sexo === 'Masculino' ? 'selected' : '' %>>Masculino</option>
+          <option value="Feminino" <%= formData.sexo === 'Feminino' ? 'selected' : '' %>>Feminino</option>
+          <option value="Outro" <%= formData.sexo === 'Outro' ? 'selected' : '' %>>Outro</option>
+          <option value="Prefiro não informar" <%= formData.sexo === 'Prefiro não informar' ? 'selected' : '' %>>Prefiro não informar</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Idade *</label>
+        <input type="number" name="idade" min="14" required value="<%= formData.idade || '' %>" />
+      </div>
+
+      <div>
+        <label>Qual produto? *</label>
+        <select name="produto" required>
+          <option value="">Selecione</option>
+          <% produtos.forEach(produto => { %>
+            <option value="<%= produto %>" <%= formData.produto === produto ? 'selected' : '' %>><%= produto %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div>
+        <label>Qual lote do produto? *</label>
+        <input type="number" name="lote" required value="<%= formData.lote || '' %>" />
+      </div>
+
+      <div>
+        <label>Qual dose utilizada?</label>
+        <select name="dose">
+          <option value="">Selecione</option>
+          <% doses.forEach(dose => { %>
+            <option value="<%= dose %>" <%= formData.dose === dose ? 'selected' : '' %>><%= dose %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div>
+        <label>Local onde comprou *</label>
+        <select name="local_compra" required>
+          <option value="">Selecione</option>
+          <% locaisCompra.forEach(local => { %>
+            <option value="<%= local %>" <%= formData.local_compra === local ? 'selected' : '' %>><%= local %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="full">
+        <label class="label-with-help">
+          <span>Foto do lote da ampola *</span>
+          <span class="help-tooltip">
+            ?
+            <span class="help-tooltip-content">
+              <img src="/images/exemplo-lote.png" alt="Exemplo de foto do lote" class="help-example-image" />
+              <span class="help-tooltip-text">Envie uma foto nítida mostrando o lote impresso na ampola ou embalagem.</span>
+            </span>
+          </span>
+        </label>
+        <input type="file" name="foto_lote" accept="image/*" required />
+      </div>
+
+      <div class="full">
+        <label>Quais sintomas?</label>
+        <div class="checkbox-grid">
+          <% sintomas.forEach(sintoma => { %>
+            <label class="checkbox-item">
+              <input
+                type="checkbox"
+                name="sintomas"
+                value="<%= sintoma %>"
+                <%= formData.sintomas && formData.sintomas.includes(sintoma) ? 'checked' : '' %>
+              />
+              <span><%= sintoma %></span>
+            </label>
+          <% }) %>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Faixa etária</h2>
-        <div class="chart-box">
-          <canvas id="chartAge"></canvas>
-        </div>
+      <div class="full">
+        <label>Observações</label>
+        <textarea name="observacoes" rows="5"><%= formData.observacoes || '' %></textarea>
       </div>
 
-      <div class="card full">
-        <h2>Lotes com mais sintomas negativos</h2>
-        <div class="chart-box chart-box-horizontal">
-          <canvas id="chartLots"></canvas>
-        </div>
+      <div class="full consent-box">
+        <label class="checkbox-item consent-item">
+          <input
+            type="checkbox"
+            name="aceite_termos"
+            value="sim"
+            required
+            <%= formData.aceite_termos ? 'checked' : '' %>
+          />
+          <span>
+            Li e aceito os
+            <a href="/termos" target="_blank" rel="noopener noreferrer">Termos e Condições</a>.
+          </span>
+        </label>
+
+        <label class="checkbox-item consent-item">
+          <input
+            type="checkbox"
+            name="aceite_privacidade"
+            value="sim"
+            required
+            <%= formData.aceite_privacidade ? 'checked' : '' %>
+          />
+          <span>
+            Li e aceito a
+            <a href="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+          </span>
+        </label>
       </div>
 
-      <div class="card full">
-        <h2>Registros enviados</h2>
-        <div class="table-wrapper">
-          <table id="reportsTable">
-            <thead>
-              <tr>
-                <th>Sexo</th>
-                <th>Idade</th>
-                <th>Faixa etária</th>
-                <th>Produto</th>
-                <th>Lote</th>
-                <th>Dose</th>
-                <th>Local da compra</th>
-                <th>Sintomas</th>
-                <th>Observações</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
+      <div class="full">
+        <button type="submit" class="btn">Enviar</button>
       </div>
-    </div>
+    </form>
   </div>
-
-  <script>
-    let chartAcceptanceInstance = null;
-    let chartSymptomsInstance = null;
-    let chartLotsInstance = null;
-    let chartAgeInstance = null;
-
-    async function loadDashboard() {
-      const produto = document.getElementById("filtroProduto").value;
-      const dose = document.getElementById("filtroDose").value;
-      const sexo = document.getElementById("filtroSexo").value;
-
-      const params = new URLSearchParams();
-      if (produto) params.append("produto", produto);
-      if (dose) params.append("dose", dose);
-      if (sexo) params.append("sexo", sexo);
-
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
-      const data = await response.json();
-
-      preencherFiltros(data.filtros);
-      renderCharts(data);
-      renderTabela(data.tabela);
-    }
-
-    function preencherFiltros(filtros) {
-      const doseSelect = document.getElementById("filtroDose");
-      const sexoSelect = document.getElementById("filtroSexo");
-
-      const doseAtual = doseSelect.value;
-      const sexoAtual = sexoSelect.value;
-
-      doseSelect.innerHTML = '<option value="">Todas</option>';
-      filtros.doses.forEach((dose) => {
-        const option = document.createElement("option");
-        option.value = dose;
-        option.textContent = dose;
-        if (String(dose) === String(doseAtual)) option.selected = true;
-        doseSelect.appendChild(option);
-      });
-
-      sexoSelect.innerHTML = '<option value="">Todos</option>';
-      filtros.sexos.forEach((sexo) => {
-        const option = document.createElement("option");
-        option.value = sexo;
-        option.textContent = sexo;
-        if (String(sexo) === String(sexoAtual)) option.selected = true;
-        sexoSelect.appendChild(option);
-      });
-    }
-
-    function destroyCharts() {
-      if (chartAcceptanceInstance) chartAcceptanceInstance.destroy();
-      if (chartSymptomsInstance) chartSymptomsInstance.destroy();
-      if (chartLotsInstance) chartLotsInstance.destroy();
-      if (chartAgeInstance) chartAgeInstance.destroy();
-    }
-
-    function baseOptions() {
-      return {
-        responsive: true,
-        maintainAspectRatio: false
-      };
-    }
-
-    function renderCharts(data) {
-      destroyCharts();
-
-      const acceptanceLabels = data.acceptance.map(
-        item => `${item.produto} - ${item.sexo}`
-      );
-      const acceptanceValues = data.acceptance.map(
-        item => item.aceitacaoPercentual
-      );
-
-      chartAcceptanceInstance = new Chart(document.getElementById("chartAcceptance"), {
-        type: "bar",
-        data: {
-          labels: acceptanceLabels,
-          datasets: [{
-            label: "% de aceitação",
-            data: acceptanceValues
-          }]
-        },
-        options: {
-          ...baseOptions(),
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100
-            }
-          }
-        }
-      });
-
-      const symptomLabels = data.sintomasComuns.map(item => item.sintoma);
-      const symptomValues = data.sintomasComuns.map(item => item.total);
-
-      chartSymptomsInstance = new Chart(document.getElementById("chartSymptoms"), {
-        type: "pie",
-        data: {
-          labels: symptomLabels,
-          datasets: [{
-            label: "Quantidade",
-            data: symptomValues
-          }]
-        },
-        options: {
-          ...baseOptions()
-        }
-      });
-
-      const ageLabels = data.faixasEtarias.map(item => item.faixa);
-      const ageValues = data.faixasEtarias.map(item => item.total);
-
-      chartAgeInstance = new Chart(document.getElementById("chartAge"), {
-        type: "bar",
-        data: {
-          labels: ageLabels,
-          datasets: [{
-            label: "Quantidade de relatos",
-            data: ageValues
-          }]
-        },
-        options: {
-          ...baseOptions(),
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      const lotLabels = data.lotesNegativos.map(
-        item => `${item.produto} - Lote ${item.lote}`
-      );
-      const lotValues = data.lotesNegativos.map(
-        item => item.totalNegativos
-      );
-
-      chartLotsInstance = new Chart(document.getElementById("chartLots"), {
-        type: "bar",
-        data: {
-          labels: lotLabels,
-          datasets: [{
-            label: "Relatos negativos",
-            data: lotValues
-          }]
-        },
-        options: {
-          ...baseOptions(),
-          indexAxis: "y"
-        }
-      });
-    }
-
-    function renderTabela(tabela) {
-      const tbody = document.querySelector("#reportsTable tbody");
-      tbody.innerHTML = "";
-
-      tabela.forEach(item => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.sexo}</td>
-          <td>${item.idade ?? ""}</td>
-          <td>${item.faixaEtaria ?? ""}</td>
-          <td>${item.produto}</td>
-          <td>${item.lote}</td>
-          <td>${item.dose ?? ""}</td>
-          <td>${item.local_compra ?? ""}</td>
-          <td>${item.sintomas}</td>
-          <td>${item.observacoes || ""}</td>
-          <td>${new Date(item.created_at).toLocaleString("pt-BR")}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function aplicarFiltrosAutomaticamente() {
-      document.getElementById("filtroProduto").addEventListener("change", loadDashboard);
-      document.getElementById("filtroDose").addEventListener("change", loadDashboard);
-      document.getElementById("filtroSexo").addEventListener("change", loadDashboard);
-    }
-
-    document.getElementById("btnLimpar").addEventListener("click", () => {
-      document.getElementById("filtroProduto").value = "";
-      document.getElementById("filtroDose").value = "";
-      document.getElementById("filtroSexo").value = "";
-      loadDashboard();
-    });
-
-    aplicarFiltrosAutomaticamente();
-    loadDashboard();
-  </script>
 </body>
 </html>

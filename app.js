@@ -116,10 +116,7 @@ const DOSES = [
   "15,0mg"
 ];
 
-const LOCAIS_COMPRA = [
-  "Farmácia",
-  "Outros"
-];
+const LOCAIS_COMPRA = ["Farmácia", "Outros"];
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -405,7 +402,7 @@ app.get("/api/dashboard", async (req, res) => {
       let sintomas = [];
       try {
         sintomas = JSON.parse(row.sintomas || "[]");
-      } catch (e) {
+      } catch {
         sintomas = [];
       }
 
@@ -417,17 +414,9 @@ app.get("/api/dashboard", async (req, res) => {
       };
     });
 
-    if (produto) {
-      reports = reports.filter((r) => r.produto === produto);
-    }
-
-    if (sexo) {
-      reports = reports.filter((r) => r.sexo === sexo);
-    }
-
-    if (dose) {
-      reports = reports.filter((r) => r.dose === dose);
-    }
+    if (produto) reports = reports.filter((r) => r.produto === produto);
+    if (sexo) reports = reports.filter((r) => r.sexo === sexo);
+    if (dose) reports = reports.filter((r) => r.dose === dose);
 
     const acceptanceMap = {};
     for (const report of reports) {
@@ -441,9 +430,7 @@ app.get("/api/dashboard", async (req, res) => {
         };
       }
       acceptanceMap[key].total += 1;
-      if (!report.negativo) {
-        acceptanceMap[key].semNegativo += 1;
-      }
+      if (!report.negativo) acceptanceMap[key].semNegativo += 1;
     }
 
     const acceptance = Object.values(acceptanceMap).map((item) => ({
@@ -452,9 +439,7 @@ app.get("/api/dashboard", async (req, res) => {
       total: item.total,
       semNegativo: item.semNegativo,
       aceitacaoPercentual:
-        item.total > 0
-          ? Number(((item.semNegativo / item.total) * 100).toFixed(2))
-          : 0
+        item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0
     }));
 
     const symptomCount = {};
@@ -514,11 +499,7 @@ app.get("/api/dashboard", async (req, res) => {
     }));
 
     const dosesDisponiveis = [
-      ...new Set(
-        rows
-          .map((r) => r.dose)
-          .filter((d) => d !== null && d !== undefined && d !== "")
-      )
+      ...new Set(rows.map((r) => r.dose).filter((d) => d))
     ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
 
     const sexosDisponiveis = [
