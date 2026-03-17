@@ -71,17 +71,10 @@ const SINTOMAS = [
 ];
 
 const SINTOMAS_NEGATIVOS = [
-  "Náusea",
-  "Dor de cabeça",
-  "Tontura",
-  "Sonolência",
-  "Irritação na pele",
-  "Insônia",
-  "Boca seca",
-  "Perda de massa magra",
+ 
   "Ganho de peso",
   "Aumento da fome",
-  "Compulsão alimentar"
+  "Compulsão alimentar",
 ];
 
 const DOSES = [
