@@ -3,7 +3,6 @@ const express = require("express");
 const multer = require("multer");
 const { Pool } = require("pg");
 const path = require("path");
-const fs = require("fs");
 
 // --- NOVAS IMPORTAÇÕES DE AUTENTICAÇÃO ---
 const session = require("express-session");
@@ -13,7 +12,9 @@ const bcrypt = require("bcrypt");
 
 const app = express();
 const port = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === "production";
 
+app.set("trust proxy", 1);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -23,10 +24,14 @@ app.use(express.json());
 
 // --- CONFIGURAÇÃO DE SESSÃO E PASSPORT ---
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'datatirze_secret_key_2026',
+  secret: process.env.SESSION_SECRET || "datatirze_secret_key_2026",
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // Em produção com HTTPS, mude para true
+  cookie: {
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: "lax",
+  },
 }));
 
 app.use(passport.initialize());
@@ -214,8 +219,13 @@ function requireAuth(req, res, next) {
 
 // --- ROTAS PÚBLICAS ---
 app.get("/", (req, res) => {
-  // home = manutenção; landing completa em views/home-landing.ejs
+  // home = manutenção; preview da landing: GET /preview-home
   res.render("home");
+});
+
+// Preview da home completa (edite views/home-landing.ejs). Remova em produção se não quiser URL pública.
+app.get("/preview-home", (req, res) => {
+  res.render("home-landing");
 });
 
 app.get("/reportar", (req, res) => {
