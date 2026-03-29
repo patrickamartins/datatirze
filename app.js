@@ -1,149 +1,126 @@
 require("dotenv").config();
-
 const express = require("express");
-const bodyParser = require("body-parser");
-const path = require("path");
 const multer = require("multer");
 const { Pool } = require("pg");
+const path = require("path");
+const fs = require("fs");
+
+// --- NOVAS IMPORTAÇÕES DE AUTENTICAÇÃO ---
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const bcrypt = require("bcrypt");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 8 * 1024 * 1024
-  }
-});
-
-const PRODUTOS = [
-  "Gluconex 15mg 4 Ampolas",
-  "Lipoland 10mg 4 Ampolas",
-  "Lipoland 15mg 4 Ampolas",
-  "Lipoland MD 15mg",
-  "Lipoless 2,5mg 4 Ampolas",
-  "Lipoless 5mg 4 Ampolas",
-  "Lipoless 7,5mg 4 Ampolas",
-  "Lipoless 10mg 4 Ampolas",
-  "Lipoless 12,5mg 4 Ampolas",
-  "Lipoless 15mg 4 Ampolas",
-  "Lipoless MD 15mg",
-  "Mounjaro 2,5mg Caneta",
-  "Mounjaro 5mg Caneta",
-  "Mounjaro 7,5mg Caneta",
-  "Mounjaro 10mg Caneta",
-  "Mounjaro 12,5mg Caneta",
-  "Mounjaro 15mg Caneta",
-  "Synedica Labs 240mg 4 Ampolas",
-  "TG 2,5mg 4 Ampolas",
-  "TG 5mg 4 Ampolas",
-  "TG 7,5mg 4 Ampolas",
-  "TG 10mg 4 Ampolas",
-  "TG 12,5mg 4 Ampolas",
-  "TG 15mg 4 Ampolas",
-  "Tirzec MD 2,5mg",
-  "Tirzec MD 5mg",
-  "Tirzec MD 7,5mg",
-  "Tirzec MD 10mg",
-  "Tirzec MD 12,5mg",
-  "Tirzec MD 15mg",
-  "Tirzec Pen 15mg"
-];
-
-const SINTOMAS = [
-  "Náusea",
-  "Dor de cabeça",
-  "Tontura",
-  "Sonolência",
-  "Irritação na pele",
-  "Insônia",
-  "Boca seca",
-  "Perda da fome",
-  "Perda de medidas",
-  "Perda de peso",
-  "Perda de massa magra",
-  "Ganho de peso",
-  "Aumento da fome",
-  "Compulsão alimentar",
-  "Melhora na disposição",
-  "Sem sintomas colaterais",
-  "Outro"
-];
-
-const SINTOMAS_NEGATIVOS = [
- 
-  "Ganho de peso",
-  "Aumento da fome",
-  "Compulsão alimentar",
-];
-
-const DOSES = [
-  "1,0mg",
-  "1,5mg",
-  "2,0mg",
-  "2,5mg",
-  "3,0mg",
-  "3,5mg",
-  "4,0mg",
-  "4,5mg",
-  "5,0mg",
-  "5,5mg",
-  "6,0mg",
-  "6,5mg",
-  "7,0mg",
-  "7,5mg",
-  "8,0mg",
-  "8,5mg",
-  "9,0mg",
-  "9,5mg",
-  "10,0mg",
-  "10,5mg",
-  "11,0mg",
-  "11,5mg",
-  "12,0mg",
-  "12,5mg",
-  "13,0mg",
-  "13,5mg",
-  "14,0mg",
-  "14,5mg",
-  "15,0mg"
-];
-
-const LOCAIS_COMPRA = ["Farmácia", "Outros"];
+const port = process.env.PORT || 3000;
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// --- CONFIGURAÇÃO DE SESSÃO E PASSPORT ---
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'datatirze_secret_key_2026',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Em produção com HTTPS, mude para true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.isAuthenticated ? req.isAuthenticated() : false;
+  res.locals.currentUser = req.user || null;
+  next();
+});
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL nao foi definida.");
+  console.error("DATABASE_URL não configurada no .env. Configure a conexão PostgreSQL para iniciar o sistema.");
   process.exit(1);
 }
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes("localhost") 
+    ? false 
+    : { rejectUnauthorized: false }
 });
 
-async function ensureColumnExists(columnName, definition) {
-  const existsResult = await pool.query(
-    `
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_name = 'reports'
-      AND column_name = $1
-    `,
-    [columnName]
-  );
+// --- SERIALIZAÇÃO DO USUÁRIO ---
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    done(null, result.rows[0]);
+  } catch (err) {
+    done(err, null);
+  }
+});
 
-  if (existsResult.rows.length === 0) {
-    await pool.query(`ALTER TABLE reports ADD COLUMN ${columnName} ${definition}`);
+// --- ESTRATÉGIA DO GOOGLE ---
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let result = await pool.query("SELECT * FROM users WHERE google_id = $1 OR email = $2", [profile.id, profile.emails[0].value]);
+        let user = result.rows[0];
+
+        if (user) {
+          if (!user.google_id) {
+            await pool.query("UPDATE users SET google_id = $1 WHERE id = $2", [profile.id, user.id]);
+          }
+          return done(null, user);
+        } else {
+          const insertResult = await pool.query(
+            "INSERT INTO users (nome, email, google_id) VALUES ($1, $2, $3) RETURNING *",
+            [profile.displayName, profile.emails[0].value, profile.id]
+          );
+          return done(null, insertResult.rows[0]);
+        }
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  ));
+}
+
+// --- CONSTANTES DO SISTEMA ORIGINAL ---
+const SINTOMAS_NEGATIVOS = [
+  "Dor de cabeça", "Náusea", "Tontura", "Fadiga", "Insônia",
+  "Ansiedade", "Palpitações", "Irritação na pele",
+  "Alteração de humor", "Desconforto gastrointestinal"
+];
+
+const PRODUTOS = ["Produto A", "Produto B", "Produto C"];
+const DOSES = ["10mg", "20mg", "30mg", "Outra"];
+const LOCAIS_COMPRA = ["Farmácia", "Internet", "Clínica", "Outro"];
+const SINTOMAS = [...SINTOMAS_NEGATIVOS, "Aumento de energia", "Melhora no sono", "Redução de dor", "Nenhum sintoma"];
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// --- INICIALIZAÇÃO DO BANCO DE DADOS ---
+async function ensureColumnExists(columnName, columnType) {
+  try {
+    const res = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name='reports' AND column_name=$1
+    `, [columnName]);
+    
+    if (res.rows.length === 0) {
+      await pool.query(`ALTER TABLE reports ADD COLUMN ${columnName} ${columnType}`);
+      console.log(`Coluna ${columnName} adicionada com sucesso.`);
+    }
+  } catch (err) {
+    console.error(`Erro ao verificar/adicionar coluna ${columnName}:`, err);
   }
 }
 
@@ -165,6 +142,18 @@ async function initDb() {
     )
   `);
 
+  // Tabela de usuários (NOVA)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      nome TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      senha TEXT,
+      google_id TEXT UNIQUE,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+
   await ensureColumnExists("local_compra", "TEXT");
   await ensureColumnExists("foto_lote", "BYTEA");
   await ensureColumnExists("foto_lote_nome", "TEXT");
@@ -175,6 +164,7 @@ async function initDb() {
   await ensureColumnExists("aceite_privacidade_em", "TIMESTAMP");
 }
 
+// --- FUNÇÕES AUXILIARES ---
 function getYearMonth(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -216,195 +206,132 @@ function renderForm(res, overrides = {}) {
   });
 }
 
+// Middleware de Proteção
+function requireAuth(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect("/login");
+}
+
+// --- ROTAS PÚBLICAS ---
 app.get("/", (req, res) => {
-  renderForm(res);
+  // home = manutenção; landing completa em views/home-landing.ejs
+  res.render("home");
 });
 
-app.get("/termos", (req, res) => {
-  res.render("termos");
+app.get("/reportar", (req, res) => {
+  renderForm(res); // O form antigo agora fica aqui
 });
 
-app.get("/privacidade", (req, res) => {
-  res.render("privacidade");
+app.get("/termos", (req, res) => res.render("termos"));
+app.get("/privacidade", (req, res) => res.render("privacidade"));
+
+// --- ROTAS DE AUTENTICAÇÃO ---
+app.get("/login", (req, res) => res.render("login", { error: null }));
+app.get("/register", (req, res) => res.render("register", { error: null }));
+
+app.post("/register", async (req, res) => {
+  const { nome, email, senha, confirmarSenha, aceite_termos } = req.body;
+  if (senha !== confirmarSenha) return res.render("register", { error: "As senhas não conferem." });
+  if (!aceite_termos) return res.render("register", { error: "Você deve aceitar os termos." });
+
+  try {
+    const hash = await bcrypt.hash(senha, 10);
+    await pool.query("INSERT INTO users (nome, email, senha) VALUES ($1, $2, $3)", [nome, email, hash]);
+    res.redirect("/login");
+  } catch (err) {
+    res.render("register", { error: "Erro ao cadastrar. Email pode já estar em uso." });
+  }
 });
 
+app.post("/login", async (req, res) => {
+  const { email, senha } = req.body;
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = result.rows[0];
+
+    if (user && user.senha && await bcrypt.compare(senha, user.senha)) {
+      req.login(user, (err) => {
+        if (err) throw err;
+        return res.redirect("/dashboard");
+      });
+    } else {
+      res.render("login", { error: "Email ou senha inválidos." });
+    }
+  } catch (err) {
+    res.render("login", { error: "Erro ao processar login." });
+  }
+});
+
+app.get("/logout", (req, res) => {
+  req.logout(() => res.redirect("/"));
+});
+
+// Autenticação Google
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+app.get("/auth/google/callback", 
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => res.redirect("/dashboard")
+);
+
+// --- ROTA DE SUBMIT DO FORMULÁRIO (ORIGINAL) ---
 app.post("/submit", upload.single("foto_lote"), async (req, res) => {
-  const {
-    nome,
-    email,
-    telefone,
-    sexo,
-    idade,
-    produto,
-    lote,
-    dose,
-    local_compra,
-    observacoes,
-    aceite_termos,
-    aceite_privacidade
-  } = req.body;
-
+  const { nome, email, telefone, sexo, idade, produto, lote, dose, local_compra, observacoes, aceite_termos, aceite_privacidade } = req.body;
   const sintomasArray = parseSintomas(req.body.sintomas);
 
-  const formData = {
-    nome,
-    email,
-    telefone,
-    sexo,
-    idade,
-    produto,
-    lote,
-    dose,
-    local_compra,
-    observacoes,
-    aceite_termos,
-    aceite_privacidade,
-    sintomas: sintomasArray
-  };
+  const formData = { nome, email, telefone, sexo, idade, produto, lote, dose, local_compra, observacoes, aceite_termos, aceite_privacidade, sintomas: sintomasArray };
 
   if (!nome || !email || !telefone || !sexo || !idade || !produto || !lote || !local_compra) {
-    return renderForm(res.status(400), {
-      error: "Preencha todos os campos obrigatórios.",
-      formData
-    });
+    return renderForm(res.status(400), { error: "Preencha todos os campos obrigatórios.", formData });
   }
 
-  if (!req.file) {
-    return renderForm(res.status(400), {
-      error: "A foto do lote da ampola é obrigatória.",
-      formData
-    });
-  }
-
-  if (!req.file.mimetype || !req.file.mimetype.startsWith("image/")) {
-    return renderForm(res.status(400), {
-      error: "Envie uma imagem válida para a foto do lote.",
-      formData
-    });
+  if (!req.file || !req.file.mimetype || !req.file.mimetype.startsWith("image/")) {
+    return renderForm(res.status(400), { error: "Envie uma imagem válida para a foto do lote.", formData });
   }
 
   if (!aceite_termos || !aceite_privacidade) {
-    return renderForm(res.status(400), {
-      error: "É obrigatório aceitar os Termos e Condições e a Política de Privacidade.",
-      formData
-    });
+    return renderForm(res.status(400), { error: "É obrigatório aceitar os Termos e Condições e a Política de Privacidade.", formData });
   }
 
   try {
     const yearMonth = getYearMonth();
-
     const checkResult = await pool.query(
-      `
-      SELECT id
-      FROM reports
-      WHERE email = $1
-        AND telefone = $2
-        AND produto = $3
-        AND TO_CHAR(created_at, 'YYYY-MM') = $4
-      LIMIT 1
-      `,
+      `SELECT id FROM reports WHERE email = $1 AND telefone = $2 AND produto = $3 AND TO_CHAR(created_at, 'YYYY-MM') = $4 LIMIT 1`,
       [email, telefone, produto, yearMonth]
     );
 
     if (checkResult.rows.length > 0) {
-      return renderForm(res.status(400), {
-        error: `Você já registrou um relato para o produto "${produto}" neste mês.`,
-        formData
-      });
+      return renderForm(res.status(400), { error: `Você já registrou um relato para o produto "${produto}" neste mês.`, formData });
     }
 
     await pool.query(
-      `
-      INSERT INTO reports
-      (
-        nome,
-        email,
-        telefone,
-        sexo,
-        idade,
-        produto,
-        lote,
-        dose,
-        local_compra,
-        sintomas,
-        observacoes,
-        foto_lote,
-        foto_lote_nome,
-        foto_lote_tipo,
-        aceite_termos,
-        aceite_privacidade,
-        aceite_termos_em,
-        aceite_privacidade_em,
-        created_at
-      )
-      VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), NOW())
-      `,
-      [
-        nome,
-        email,
-        telefone,
-        sexo,
-        parseInt(idade, 10),
-        produto,
-        parseInt(lote, 10),
-        dose || null,
-        local_compra,
-        JSON.stringify(sintomasArray),
-        observacoes || "",
-        req.file.buffer,
-        req.file.originalname || null,
-        req.file.mimetype || null,
-        true,
-        true
-      ]
+      `INSERT INTO reports (nome, email, telefone, sexo, idade, produto, lote, dose, local_compra, sintomas, observacoes, foto_lote, foto_lote_nome, foto_lote_tipo, aceite_termos, aceite_privacidade, aceite_termos_em, aceite_privacidade_em, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), NOW())`,
+      [nome, email, telefone, sexo, parseInt(idade, 10), produto, parseInt(lote, 10), dose || null, local_compra, JSON.stringify(sintomasArray), observacoes || "", req.file.buffer, req.file.originalname || null, req.file.mimetype || null, true, true]
     );
 
-    return renderForm(res, {
-      success: "Relato enviado com sucesso.",
-      formData: {}
-    });
+    return renderForm(res, { success: "Relato enviado com sucesso.", formData: {} });
   } catch (err) {
     console.error("Erro no submit:", err);
-    return renderForm(res.status(500), {
-      error: "Erro ao salvar o formulário.",
-      formData
-    });
+    return renderForm(res.status(500), { error: "Erro ao salvar o formulário.", formData });
   }
 });
 
-app.get("/dashboard", (req, res) => {
-  res.render("dashboard", {
-    produtos: PRODUTOS
-  });
+// --- ROTAS PROTEGIDAS (DASHBOARD) ---
+app.get("/dashboard", requireAuth, (req, res) => {
+  res.render("dashboard", { produtos: PRODUTOS, user: req.user });
 });
 
-app.get("/api/dashboard", async (req, res) => {
+app.get("/api/dashboard", requireAuth, async (req, res) => {
   const { produto, dose, sexo } = req.query;
 
   try {
-    const result = await pool.query(`
-      SELECT *
-      FROM reports
-      ORDER BY created_at DESC
-    `);
-
+    const result = await pool.query(`SELECT * FROM reports ORDER BY created_at DESC`);
     const rows = result.rows;
 
     let reports = rows.map((row) => {
       let sintomas = [];
-      try {
-        sintomas = JSON.parse(row.sintomas || "[]");
-      } catch {
-        sintomas = [];
-      }
-
-      return {
-        ...row,
-        sintomas,
-        negativo: isNegativeReport(sintomas),
-        faixaEtaria: getFaixaEtaria(row.idade)
-      };
+      try { sintomas = JSON.parse(row.sintomas || "[]"); } catch { sintomas = []; }
+      return { ...row, sintomas, negativo: isNegativeReport(sintomas), faixaEtaria: getFaixaEtaria(row.idade) };
     });
 
     if (produto) reports = reports.filter((r) => r.produto === produto);
@@ -415,24 +342,15 @@ app.get("/api/dashboard", async (req, res) => {
     for (const report of reports) {
       const key = `${report.produto}__${report.sexo}`;
       if (!acceptanceMap[key]) {
-        acceptanceMap[key] = {
-          produto: report.produto,
-          sexo: report.sexo,
-          total: 0,
-          semNegativo: 0
-        };
+        acceptanceMap[key] = { produto: report.produto, sexo: report.sexo, total: 0, semNegativo: 0 };
       }
       acceptanceMap[key].total += 1;
       if (!report.negativo) acceptanceMap[key].semNegativo += 1;
     }
 
     const acceptance = Object.values(acceptanceMap).map((item) => ({
-      produto: item.produto,
-      sexo: item.sexo,
-      total: item.total,
-      semNegativo: item.semNegativo,
-      aceitacaoPercentual:
-        item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0
+      produto: item.produto, sexo: item.sexo, total: item.total, semNegativo: item.semNegativo,
+      aceitacaoPercentual: item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0
     }));
 
     const symptomCount = {};
@@ -442,43 +360,24 @@ app.get("/api/dashboard", async (req, res) => {
       }
     }
 
-    const sintomasComuns = Object.entries(symptomCount)
-      .map(([sintoma, total]) => ({ sintoma, total }))
-      .sort((a, b) => b.total - a.total);
+    const sintomasComuns = Object.entries(symptomCount).map(([sintoma, total]) => ({ sintoma, total })).sort((a, b) => b.total - a.total);
 
     const lotesNegativosMap = {};
     for (const report of reports) {
       if (report.negativo) {
         const key = `${report.produto}__${report.lote}`;
         if (!lotesNegativosMap[key]) {
-          lotesNegativosMap[key] = {
-            produto: report.produto,
-            lote: report.lote,
-            totalNegativos: 0
-          };
+          lotesNegativosMap[key] = { produto: report.produto, lote: report.lote, totalNegativos: 0 };
         }
         lotesNegativosMap[key].totalNegativos += 1;
       }
     }
 
-    const lotesNegativos = Object.values(lotesNegativosMap).sort(
-      (a, b) => b.totalNegativos - a.totalNegativos
-    );
+    const lotesNegativos = Object.values(lotesNegativosMap).sort((a, b) => b.totalNegativos - a.totalNegativos);
 
-    const ordemFaixas = [
-      "14 a 18",
-      "19 a 24",
-      "25 a 30",
-      "31 a 40",
-      "41 a 55",
-      "56 a 65",
-      "65+"
-    ];
-
+    const ordemFaixas = ["14 a 18", "19 a 24", "25 a 30", "31 a 40", "41 a 55", "56 a 65", "65+"];
     const faixaMap = {};
-    ordemFaixas.forEach((faixa) => {
-      faixaMap[faixa] = 0;
-    });
+    ordemFaixas.forEach((faixa) => { faixaMap[faixa] = 0; });
 
     for (const report of reports) {
       if (faixaMap[report.faixaEtaria] !== undefined) {
@@ -486,57 +385,31 @@ app.get("/api/dashboard", async (req, res) => {
       }
     }
 
-    const faixasEtarias = ordemFaixas.map((faixa) => ({
-      faixa,
-      total: faixaMap[faixa]
-    }));
-
-    const dosesDisponiveis = [
-      ...new Set(rows.map((r) => r.dose).filter((d) => d))
-    ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
-
-    const sexosDisponiveis = [
-      ...new Set(rows.map((r) => r.sexo).filter(Boolean))
-    ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+    const faixasEtarias = ordemFaixas.map((faixa) => ({ faixa, total: faixaMap[faixa] }));
+    const dosesDisponiveis = [...new Set(rows.map((r) => r.dose).filter((d) => d))].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+    const sexosDisponiveis = [...new Set(rows.map((r) => r.sexo).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
 
     const tabela = reports.map((r) => ({
-      sexo: r.sexo,
-      idade: r.idade,
-      faixaEtaria: r.faixaEtaria,
-      produto: r.produto,
-      lote: r.lote,
-      dose: r.dose,
-      local_compra: r.local_compra,
-      sintomas: r.sintomas.join(", "),
-      observacoes: r.observacoes,
-      created_at: r.created_at
+      sexo: r.sexo, idade: r.idade, faixaEtaria: r.faixaEtaria, produto: r.produto, lote: r.lote,
+      dose: r.dose, local_compra: r.local_compra, sintomas: r.sintomas.join(", "), observacoes: r.observacoes, created_at: r.created_at
     }));
 
     res.json({
-      acceptance,
-      sintomasComuns,
-      lotesNegativos,
-      faixasEtarias,
-      tabela,
-      filtros: {
-        produtos: PRODUTOS,
-        doses: dosesDisponiveis,
-        sexos: sexosDisponiveis
-      }
+      acceptance, sintomasComuns, lotesNegativos, faixasEtarias, tabela,
+      filtros: { produtos: PRODUTOS, doses: dosesDisponiveis, sexos: sexosDisponiveis }
     });
   } catch (err) {
-    console.error("Erro no dashboard:", err);
-    res.status(500).json({ error: "Erro ao buscar dados." });
+    console.error("Erro na API do dashboard:", err);
+    res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
 
-initDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Erro ao iniciar banco:", err);
-    process.exit(1);
+// --- INICIAR SERVIDOR ---
+initDb().then(() => {
+  app.listen(port, () => {
+    console.log(`Servidor rodando na porta ${port}`);
   });
+}).catch((err) => {
+  console.error("Erro ao inicializar o banco de dados:", err);
+  process.exit(1);
+});

@@ -32,6 +32,10 @@ body {
   position: relative;
 }
 
+.global-header {
+  margin-bottom: 24px;
+}
+
 .brand {
   display: flex;
   justify-content: center;
@@ -39,6 +43,13 @@ body {
   gap: 14px;
   min-width: 0;
   width: 100%;
+}
+
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .logo {
@@ -378,6 +389,32 @@ canvas {
   color: #334155;
 }
 
+.main-footer {
+  margin-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-links a {
+  color: #19224a;
+  text-decoration: none;
+}
+
 /* Tablets */
 @media (max-width: 992px) {
   .container {
@@ -551,5 +588,109 @@ canvas {
   table td {
     font-size: 13px;
     padding: 8px;
+  }
+}
+
+
+
+/* Estilos da Home (Estilo Calm) */
+.home-body { background-color: #F7F9F9; color: #2C3E50; font-family: 'Helvetica Neue', sans-serif; margin: 0; }
+.hero-section { text-align: center; padding: 100px 20px; background: linear-gradient(180deg, #E3F2FD 0%, #F7F9F9 100%); }
+.hero-title { font-size: 3.5rem; font-weight: 700; line-height: 1.2; margin-bottom: 20px; color: #1A252F; }
+.hero-subtitle { font-size: 1.5rem; color: #546E7A; margin-bottom: 40px; }
+.hero-actions { display: flex; justify-content: center; gap: 20px; }
+.btn-large { padding: 15px 40px; font-size: 1.1rem; border-radius: 30px; }
+
+/* Seção de Vídeo */
+.video-section { max-width: 900px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
+.video-container { border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); margin-bottom: 40px; }
+.video-container video { width: 100%; display: block; }
+.info-block h2 { font-size: 2rem; color: #2C3E50; margin-bottom: 15px; }
+.info-block p { font-size: 1.2rem; color: #546E7A; line-height: 1.6; }
+
+/* Estilos de Autenticação (Login/Register) */
+.auth-page {
+  background-color: #F7F9F9;
+}
+
+.auth-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 320px);
+}
+.auth-container { max-width: 400px; width: 100%; padding: 40px; text-align: center; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+.auth-brand { margin-bottom: 20px; display: flex; justify-content: center; }
+.auth-container h2 { margin-bottom: 30px; color: #2C3E50; }
+.auth-form { text-align: left; }
+.auth-form div { margin-bottom: 20px; }
+.auth-form input { width: 100%; padding: 12px; border: 1px solid #DCE1E3; border-radius: 8px; box-sizing: border-box; }
+.full-width { width: 100%; }
+.auth-link { margin-top: 20px; font-size: 0.9rem; color: #546E7A; }
+.auth-link a { color: #3498DB; text-decoration: none; font-weight: bold; }
+
+/* Botão Google e Divisor */
+.btn-google { display: flex; align-items: center; justify-content: center; background-color: #FFF; color: #333; border: 1px solid #DCE1E3; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: background 0.2s; }
+.btn-google:hover { background-color: #F8F9FA; }
+.google-icon { width: 20px; height: 20px; margin-right: 10px; }
+.divider { display: flex; align-items: center; text-align: center; margin: 25px 0; color: #95A5A6; font-size: 0.9rem; }
+.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #DCE1E3; }
+.divider span { padding: 0 10px; }
+
+/* Página de manutenção (home temporária) */
+.maintenance-body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.maintenance-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px 80px;
+}
+
+.maintenance-card {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  padding: 40px 32px;
+}
+
+.maintenance-label {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3498DB;
+  font-weight: bold;
+}
+
+.maintenance-title {
+  margin: 0 0 16px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  color: #1A252F;
+  line-height: 1.25;
+}
+
+.maintenance-message {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #546E7A;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

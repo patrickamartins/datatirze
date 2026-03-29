@@ -8,17 +8,10 @@
 </head>
 <body>
   <div class="container legal-page">
-    <div class="header">
-  <div class="brand">
-    <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-  </div>
-  <div class="header-actions">
-    <a href="/" class="btn btn-secondary">Voltar</a>
-  </div>
-</div>
+    <%- include("partials/header") %>
 
     <div class="card legal-card">
-        <h2>Política de Privacidade</h2>
+      <h2>Política de Privacidade</h2>
       <p>A DataTirze coleta os dados informados no formulário, incluindo nome, e-mail, telefone, sexo, idade, produto, lote, dose, local de compra, sintomas, observações, imagem do lote e registros de aceite.</p>
 
       <p>Esses dados são utilizados para controle interno, análise estatística, monitoramento de qualidade, prevenção de duplicidade de relatos e geração de dashboards agregados.</p>
@@ -34,5 +27,6 @@
       <p>Em caso de atualização desta política, a versão vigente será a disponível nesta página.</p>
     </div>
   </div>
+  <%- include("partials/footer") %>
 </body>
 </html>

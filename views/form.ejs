@@ -25,14 +25,7 @@
   <!-- End Google Tag Manager (noscript) -->
 
   <div class="container">
-    <div class="header">
-      <div class="brand">
-        <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-      </div>
-      <div class="header-actions">
-        <a href="/dashboard" class="btn btn-secondary">Ver Dashboard</a>
-      </div>
-    </div>
+    <%- include("partials/header") %>
 
     <% if (success) { %>
       <div class="alert success"><%= success %></div>
@@ -180,5 +173,6 @@
       </div>
     </form>
   </div>
+  <%- include("partials/footer") %>
 </body>
 </html>

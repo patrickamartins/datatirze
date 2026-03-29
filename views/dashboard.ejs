@@ -26,14 +26,7 @@
   <!-- End Google Tag Manager (noscript) -->
 
   <div class="container">
-    <div class="header dashboard-header">
-      <div class="brand">
-        <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-      </div>
-      <div class="header-actions">
-        <a href="/" class="btn btn-secondary">Voltar ao Formulário</a>
-      </div>
-    </div>
+    <%- include("partials/header") %>
 
     <div class="card filters-card">
       <h2>Filtros</h2>
@@ -123,6 +116,7 @@
       </div>
     </div>
   </div>
+  <%- include("partials/footer") %>
 
   <script>
     let chartAcceptanceInstance = null;

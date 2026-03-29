@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro - DataTirze</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="auth-page">
+  <div class="container">
+    <%- include("partials/header") %>
+
+    <main class="auth-body">
+      <div class="auth-container card">
+        <h2>Crie sua conta</h2>
+
+        <% if (error) { %>
+          <div class="alert error"><%= error %></div>
+        <% } %>
+
+        <a href="/auth/google" class="btn btn-google">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" class="google-icon">
+          Cadastrar com o Google
+        </a>
+
+        <div class="divider"><span>ou cadastre com seu email</span></div>
+
+        <form action="/register" method="POST" class="auth-form">
+          <div>
+            <label>Nome completo</label>
+            <input type="text" name="nome" required />
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" required />
+          </div>
+          <div>
+            <label>Senha</label>
+            <input type="password" name="senha" required />
+          </div>
+          <div>
+            <label>Confirme a Senha</label>
+            <input type="password" name="confirmarSenha" required />
+          </div>
+          <div class="consent-box">
+            <label class="checkbox-item">
+              <input type="checkbox" name="aceite_termos" required />
+              <span>Li e aceito os <a href="/termos" target="_blank">Termos e Condições</a>.</span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Cadastrar</button>
+        </form>
+
+        <p class="auth-link">Já tem uma conta? <a href="/login">Faça login</a></p>
+      </div>
+    </main>
+  </div>
+  <%- include("partials/footer") %>
+</body>
+</html>

@@ -8,17 +8,10 @@
 </head>
 <body>
   <div class="container legal-page">
-   <div class="header">
-  <div class="brand">
-    <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
-  </div>
-  <div class="header-actions">
-    <a href="/" class="btn btn-secondary">Voltar</a>
-  </div>
-</div>
+    <%- include("partials/header") %>
 
     <div class="card legal-card">
-  <h2>Termos e Condições</h2>
+      <h2>Termos e Condições</h2>
       <p>Ao enviar informações neste formulário, você declara que os dados fornecidos são verdadeiros e correspondem à sua experiência real com o produto informado.</p>
 
       <p>Você concorda que as informações enviadas poderão ser utilizadas pela DataTirze para fins de análise estatística, monitoramento de qualidade, melhoria de produtos, investigação de ocorrências e geração de relatórios agregados.</p>
@@ -34,5 +27,6 @@
       <p>Ao aceitar estes termos, você concorda com a coleta e o tratamento das informações conforme descrito também na Política de Privacidade.</p>
     </div>
   </div>
+  <%- include("partials/footer") %>
 </body>
 </html>

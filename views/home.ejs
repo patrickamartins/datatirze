@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!-- Landing completa em home-landing.ejs: para restaurar, copie o conteúdo de home-landing.ejs para este arquivo. -->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataTirze — Manutenção</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="home-body maintenance-body">
+  <div class="container">
+    <%- include("partials/header") %>
+  </div>
+
+  <main class="maintenance-main">
+    <div class="maintenance-card card">
+      <p class="maintenance-label">Status</p>
+      <h1 class="maintenance-title">Estamos em manutenção</h1>
+      <p class="maintenance-message">Logo voltamos com dados metabolizados.</p>
+    </div>
+  </main>
+
+  <%- include("partials/footer") %>
+</body>
+</html>

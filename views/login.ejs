@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - DataTirze</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="auth-page">
+  <div class="container">
+    <%- include("partials/header") %>
+
+    <main class="auth-body">
+      <div class="auth-container card">
+        <h2>Bem-vindo de volta</h2>
+        
+        <% if (error) { %>
+          <div class="alert error"><%= error %></div>
+        <% } %>
+
+        <a href="/auth/google" class="btn btn-google">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" class="google-icon">
+          Entrar com o Google
+        </a>
+
+        <div class="divider"><span>ou entre com seu email</span></div>
+
+        <form action="/login" method="POST" class="auth-form">
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" required />
+          </div>
+          <div>
+            <label>Senha</label>
+            <input type="password" name="senha" required />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Entrar</button>
+        </form>
+        
+        <p class="auth-link">Não tem uma conta? <a href="/register">Cadastre-se</a></p>
+      </div>
+    </main>
+  </div>
+  <%- include("partials/footer") %>
+</body>
+</html>

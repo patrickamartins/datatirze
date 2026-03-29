@@ -1,0 +1,18 @@
+<header class="header global-header">
+  <div class="brand">
+    <a href="/" class="brand-link" aria-label="Ir para a página inicial">
+      <img src="/images/logo-datatirze.png" alt="DataTirze" class="logo" />
+    </a>
+  </div>
+
+  <nav class="header-actions">
+    <a href="/reportar" class="btn btn-secondary">Reportar</a>
+
+    <% if (isAuthenticated) { %>
+      <a href="/dashboard" class="btn">Dashboard</a>
+      <a href="/logout" class="btn btn-secondary">Sair</a>
+    <% } else { %>
+      <a href="/login" class="btn">Entrar</a>
+    <% } %>
+  </nav>
+</header>

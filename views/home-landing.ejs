@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataTirze - O primeiro banco de dados de peptídeos</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="home-body">
+  <div class="container">
+    <%- include("partials/header") %>
+  </div>
+
+  <main class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Reporte seus dados.<br>Encontre seu padrão.</h1>
+      <p class="hero-subtitle">O primeiro banco de dados sobre peptídeos do Brasil.</p>
+      <div class="hero-actions">
+        <a href="/reportar" class="btn btn-primary btn-large">REPORTAR</a>
+        <% if (!isAuthenticated) { %>
+          <a href="/register" class="btn btn-secondary btn-large">Fazer Cadastro</a>
+        <% } else { %>
+          <a href="/dashboard" class="btn btn-secondary btn-large">Ver Dashboard</a>
+        <% } %>
+      </div>
+    </div>
+  </main>
+
+  <section class="video-section">
+    <div class="video-container">
+      <video controls poster="/images/video-poster.jpg">
+        <source src="/videos/apresentacao.mp4" type="video/mp4">
+        Seu navegador não suporta vídeos.
+      </video>
+    </div>
+    <div class="info-block">
+      <h2>Por que o DataTirze?</h2>
+      <p>Nossa missão é trazer clareza e segurança através de dados reais. Compartilhe sua experiência e ajude a construir o maior mapeamento de uso de peptídeos do país.</p>
+    </div>
+  </section>
+
+  <%- include("partials/footer") %>
+</body>
+</html>
