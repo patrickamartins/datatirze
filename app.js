@@ -97,16 +97,93 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // --- CONSTANTES DO SISTEMA ORIGINAL ---
-const SINTOMAS_NEGATIVOS = [
-  "Dor de cabeça", "Náusea", "Tontura", "Fadiga", "Insônia",
-  "Ansiedade", "Palpitações", "Irritação na pele",
-  "Alteração de humor", "Desconforto gastrointestinal"
+/** Relatos com qualquer sintoma além dos neutros contam como “com efeito adverso” no dashboard. */
+const SINTOMAS_NEUTROS = new Set(["Nenhum sintoma", "Nenhum sintoma relevante"]);
+
+const PRODUTOS_TIRZEPATIDA = ["Mounjaro", "Zepbound"];
+
+const PRODUTOS_RETATRUTIDA = [
+  "Synedica 40mg Caneta",
+  "ZPHC 40mg Ampola",
+  "ZPHC 60mg Ampola",
+  "ZPHC 120mg Ampola",
+  "ZPHC 30mg Caneta",
+  "ZPHC 60mg Caneta",
+  "Alluvi 40mg Caneta",
+  "TNL 40mg Caneta",
 ];
 
-const PRODUTOS = ["Produto A", "Produto B", "Produto C"];
+const PRODUTOS_PEPTIDEOS = [
+  "Semaglutida (Ozempic / Wegovy)",
+  "Liraglutida (Saxenda / Victoza)",
+  "BPC-157",
+  "TB-500",
+  "Ipamorelin + CJC-1295",
+  "Outro peptídeo",
+];
+
+const PRODUTO_CATEGORIA = {};
+PRODUTOS_TIRZEPATIDA.forEach((p) => {
+  PRODUTO_CATEGORIA[p] = "tirzepatida";
+});
+PRODUTOS_RETATRUTIDA.forEach((p) => {
+  PRODUTO_CATEGORIA[p] = "retatrutida";
+});
+PRODUTOS_PEPTIDEOS.forEach((p) => {
+  PRODUTO_CATEGORIA[p] = "peptideos";
+});
+
+const PRODUTOS = [
+  ...PRODUTOS_TIRZEPATIDA,
+  ...PRODUTOS_RETATRUTIDA,
+  ...PRODUTOS_PEPTIDEOS,
+];
+
+const SINTOMAS_POR_CATEGORIA = {
+  tirzepatida: [
+    "Náusea",
+    "Diarreia",
+    "Vômito",
+    "Constipação",
+    "Dor Abdominal",
+    "Dispepsia (Indigestão)",
+    "Refluxo Gastroesofágico",
+    "Fadiga",
+    "Redução acentuada do apetite",
+    "Alopecia (Queda de cabelo)",
+    "Nenhum sintoma",
+  ],
+  retatrutida: [
+    "Aumento da Frequência Cardíaca",
+    "Náusea severa",
+    "Diarreia",
+    "Vômitos cíclicos",
+    "Constipação persistente",
+    "Hiperestesia cutânea",
+    "Tontura",
+    "Saciação precoce",
+    "Alteração no paladar",
+    "Desconforto epigástrico",
+    "Nenhum sintoma",
+  ],
+  peptideos: [
+    "Reação no local da injeção",
+    "Eritema ou induração no local",
+    "Prurido (coceira)",
+    "Náusea",
+    "Cefaleia",
+    "Fadiga",
+    "Tontura",
+    "Hipoglicemia sintomática",
+    "Alteração do sono (insônia ou sonolência)",
+    "Alteração do apetite",
+    "Lipotrofia no local da aplicação",
+    "Nenhum sintoma relevante",
+  ],
+};
+
 const DOSES = ["10mg", "20mg", "30mg", "Outra"];
 const LOCAIS_COMPRA = ["Farmácia", "Internet", "Clínica", "Outro"];
-const SINTOMAS = [...SINTOMAS_NEGATIVOS, "Aumento de energia", "Melhora no sono", "Redução de dor", "Nenhum sintoma"];
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -183,7 +260,8 @@ function parseSintomas(input) {
 }
 
 function isNegativeReport(sintomasArray) {
-  return sintomasArray.some((sintoma) => SINTOMAS_NEGATIVOS.includes(sintoma));
+  if (!sintomasArray || sintomasArray.length === 0) return false;
+  return sintomasArray.some((sintoma) => !SINTOMAS_NEUTROS.has(sintoma));
 }
 
 function getFaixaEtaria(idade) {
@@ -200,8 +278,13 @@ function getFaixaEtaria(idade) {
 
 function renderForm(res, overrides = {}) {
   return res.render("form", {
-    produtos: PRODUTOS,
-    sintomas: SINTOMAS,
+    produtosGrupos: [
+      { label: "Tirzepatida (Mounjaro / Zepbound) — agonista GIP/GLP-1", itens: PRODUTOS_TIRZEPATIDA },
+      { label: "Retatrutida — agonista GIP/GLP-1/Glucagon", itens: PRODUTOS_RETATRUTIDA },
+      { label: "Outros peptídeos", itens: PRODUTOS_PEPTIDEOS },
+    ],
+    sintomasPorCategoriaJson: JSON.stringify(SINTOMAS_POR_CATEGORIA),
+    produtoCategoriaJson: JSON.stringify(PRODUTO_CATEGORIA),
     doses: DOSES,
     locaisCompra: LOCAIS_COMPRA,
     success: null,
@@ -219,13 +302,17 @@ function requireAuth(req, res, next) {
 
 // --- ROTAS PÚBLICAS ---
 app.get("/", (req, res) => {
-  // home = manutenção; preview da landing: GET /preview-home
+  res.render("home-landing", { hideHeaderActions: true });
+});
+
+// Página de manutenção (opcional)
+app.get("/manutencao", (req, res) => {
   res.render("home");
 });
 
-// Preview da home completa (edite views/home-landing.ejs). Remova em produção se não quiser URL pública.
+// Alias da landing (mesma home que /)
 app.get("/preview-home", (req, res) => {
-  res.render("home-landing");
+  res.render("home-landing", { hideHeaderActions: true });
 });
 
 app.get("/reportar", (req, res) => {

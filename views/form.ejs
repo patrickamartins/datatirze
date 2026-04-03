@@ -69,10 +69,14 @@
 
       <div>
         <label>Qual produto? *</label>
-        <select name="produto" required>
+        <select name="produto" id="field-produto" required>
           <option value="">Selecione</option>
-          <% produtos.forEach(produto => { %>
-            <option value="<%= produto %>" <%= formData.produto === produto ? 'selected' : '' %>><%= produto %></option>
+          <% produtosGrupos.forEach(grupo => { %>
+            <optgroup label="<%= grupo.label %>">
+              <% grupo.itens.forEach(produto => { %>
+                <option value="<%= produto %>" <%= formData.produto === produto ? 'selected' : '' %>><%= produto %></option>
+              <% }) %>
+            </optgroup>
           <% }) %>
         </select>
       </div>
@@ -118,19 +122,8 @@
 
       <div class="full">
         <label>Quais sintomas?</label>
-        <div class="checkbox-grid">
-          <% sintomas.forEach(sintoma => { %>
-            <label class="checkbox-item">
-              <input
-                type="checkbox"
-                name="sintomas"
-                value="<%= sintoma %>"
-                <%= formData.sintomas && formData.sintomas.includes(sintoma) ? 'checked' : '' %>
-              />
-              <span><%= sintoma %></span>
-            </label>
-          <% }) %>
-        </div>
+        <p class="form-hint" id="sintomas-categoria-hint">Selecione o produto acima para ver os sintomas específicos desta categoria.</p>
+        <div class="checkbox-grid" id="sintomas-container" aria-live="polite"></div>
       </div>
 
       <div class="full">
@@ -174,5 +167,70 @@
     </form>
   </div>
   <%- include("partials/footer") %>
+  <script type="application/json" id="sintomas-por-categoria-data"><%- sintomasPorCategoriaJson %></script>
+  <script type="application/json" id="produto-categoria-data"><%- produtoCategoriaJson %></script>
+  <script type="application/json" id="form-sintomas-selecionados"><%- JSON.stringify(formData.sintomas || []) %></script>
+  <script>
+    (function () {
+      var elCat = document.getElementById("sintomas-por-categoria-data");
+      var elMap = document.getElementById("produto-categoria-data");
+      var elSaved = document.getElementById("form-sintomas-selecionados");
+      var sintomasPorCategoria = JSON.parse(elCat.textContent || "{}");
+      var produtoCategoria = JSON.parse(elMap.textContent || "{}");
+      var saved = JSON.parse(elSaved.textContent || "[]");
+      var select = document.getElementById("field-produto");
+      var container = document.getElementById("sintomas-container");
+      var hint = document.getElementById("sintomas-categoria-hint");
+
+      var labels = {
+        tirzepatida: "Sintomas frequentes com Tirzepatida (Mounjaro / Zepbound), agonista GIP/GLP-1:",
+        retatrutida: "Sintomas frequentes com Retatrutida (tri-agonista GIP/GLP-1/Glucagon):",
+        peptideos: "Sintomas frequentes com peptídeos (via subcutânea):"
+      };
+
+      function renderSintomas() {
+        var produto = select.value;
+        var cat = produtoCategoria[produto];
+        container.innerHTML = "";
+        if (!produto || !cat || !sintomasPorCategoria[cat]) {
+          hint.textContent = "Selecione o produto acima para ver os sintomas específicos desta categoria.";
+          hint.hidden = false;
+          return;
+        }
+        hint.textContent = labels[cat] || "Marque o que se aplica:";
+        hint.hidden = false;
+        var list = sintomasPorCategoria[cat];
+        list.forEach(function (sintoma) {
+          var id = "sintoma-" + sintoma.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 80);
+          var label = document.createElement("label");
+          label.className = "checkbox-item";
+          var input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = "sintomas";
+          input.value = sintoma;
+          input.id = id;
+          if (saved.indexOf(sintoma) !== -1) input.checked = true;
+          var span = document.createElement("span");
+          span.textContent = sintoma;
+          label.appendChild(input);
+          label.appendChild(span);
+          container.appendChild(label);
+        });
+      }
+
+      select.addEventListener("change", function () {
+        saved = [];
+        renderSintomas();
+      });
+
+      container.addEventListener("change", function () {
+        saved = Array.prototype.slice.call(container.querySelectorAll('input[name="sintomas"]:checked')).map(function (i) {
+          return i.value;
+        });
+      });
+
+      renderSintomas();
+    })();
+  </script>
 </body>
 </html>

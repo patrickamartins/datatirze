@@ -5,6 +5,7 @@
     </a>
   </div>
 
+  <% if (typeof hideHeaderActions === "undefined" || !hideHeaderActions) { %>
   <nav class="header-actions">
     <a href="/reportar" class="btn btn-secondary">Reportar</a>
 
@@ -15,4 +16,5 @@
       <a href="/login" class="btn">Entrar</a>
     <% } %>
   </nav>
+  <% } %>
 </header>

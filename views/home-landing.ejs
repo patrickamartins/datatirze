@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- Visualização: /preview-home — arquivo editável: views/home-landing.ejs -->
+<!-- Landing principal: rota /. Edite este arquivo. Alias: /preview-home -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DataTirze - O primeiro banco de dados de peptídeos</title>
+  <title>DataTirze - Metabolizando dados em inteligência</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="home-body">
@@ -19,7 +19,7 @@
       <div class="hero-actions">
         <a href="/reportar" class="btn btn-primary btn-large">REPORTAR</a>
         <% if (!isAuthenticated) { %>
-          <a href="/register" class="btn btn-secondary btn-large">Fazer Cadastro</a>
+          <a href="/login" class="btn btn-secondary btn-large">Ver Dados</a>
         <% } else { %>
           <a href="/dashboard" class="btn btn-secondary btn-large">Ver Dashboard</a>
         <% } %>
@@ -30,7 +30,7 @@
   <section class="video-section">
     <div class="video-container">
       <video controls poster="/images/video-poster.jpg">
-        <source src="/videos/apresentacao.mp4" type="video/mp4">
+        <source src="https://youtu.be/TLzA-3k_hWs" type="video/mp4">
         Seu navegador não suporta vídeos.
       </video>
     </div>

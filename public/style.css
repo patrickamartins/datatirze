@@ -240,6 +240,13 @@ textarea {
   color: #991b1b;
 }
 
+.form-hint {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
