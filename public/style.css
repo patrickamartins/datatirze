@@ -22,6 +22,14 @@ body {
   padding: 24px;
 }
 
+/* Dashboard: usa largura da janela (evita tabela espremida em colunas estreitas) */
+.container.dashboard-layout {
+  max-width: none;
+  width: 100%;
+  padding: 24px clamp(16px, 3vw, 56px);
+  box-sizing: border-box;
+}
+
 .header {
   display: flex;
   justify-content: center;
@@ -355,7 +363,6 @@ textarea {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 980px;
   background: #fff;
 }
 
@@ -374,10 +381,38 @@ table th {
   color: #19224a;
 }
 
+/* Tabela de relatórios: largura mínima + colunas curtas sem quebra por letra */
+#reportsTable {
+  min-width: 1280px;
+  table-layout: auto;
+}
+
 #reportsTable td,
 #reportsTable th {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+#reportsTable td:nth-child(1),
+#reportsTable td:nth-child(2),
+#reportsTable td:nth-child(3),
+#reportsTable td:nth-child(5),
+#reportsTable td:nth-child(6),
+#reportsTable td:nth-child(7),
+#reportsTable td:nth-child(10) {
+  white-space: nowrap;
+}
+
+#reportsTable td:nth-child(4) {
+  min-width: 11rem;
+}
+
+#reportsTable td:nth-child(8),
+#reportsTable td:nth-child(9) {
+  min-width: 16rem;
+  max-width: 36rem;
   white-space: normal;
-  word-break: break-word;
+  line-height: 1.45;
 }
 
 canvas {
@@ -632,6 +667,32 @@ canvas {
 .auth-form { text-align: left; }
 .auth-form div { margin-bottom: 20px; }
 .auth-form input { width: 100%; padding: 12px; border: 1px solid #DCE1E3; border-radius: 8px; box-sizing: border-box; }
+/* Checkboxes não podem herdar width:100% — senão viram “barra” larga e quebram o layout */
+.auth-form input[type="checkbox"] {
+  width: auto;
+  min-height: auto;
+  padding: 0;
+  margin: 4px 0 0;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 4px;
+  accent-color: #19224a;
+  align-self: flex-start;
+}
+.auth-form .consent-box {
+  margin-bottom: 20px;
+}
+.auth-form .consent-box .checkbox-item {
+  align-items: flex-start;
+}
+.auth-form .consent-box .checkbox-item span {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.45;
+}
+.auth-form .consent-box .checkbox-item span a {
+  white-space: nowrap;
+}
 .full-width { width: 100%; }
 .auth-link { margin-top: 20px; font-size: 0.9rem; color: #546E7A; }
 .auth-link a { color: #3498DB; text-decoration: none; font-weight: bold; }

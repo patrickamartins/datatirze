@@ -5,7 +5,12 @@
     </a>
   </div>
 
-  <% if (typeof hideHeaderActions === "undefined" || !hideHeaderActions) { %>
+  <% if (typeof headerDashboardNav !== "undefined" && headerDashboardNav) { %>
+  <nav class="header-actions">
+    <a href="/reportar" class="btn btn-secondary">Reportar</a>
+    <a href="/logout" class="btn btn-secondary">Sair</a>
+  </nav>
+  <% } else if (typeof hideHeaderActions === "undefined" || !hideHeaderActions) { %>
   <nav class="header-actions">
     <a href="/reportar" class="btn btn-secondary">Reportar</a>
 

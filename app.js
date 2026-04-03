@@ -202,6 +202,30 @@ const PRODUTOS = [
   ...PRODUTOS_PEPTIDEOS,
 ];
 
+/** Mesma estrutura do formulário de report (filtro Marca / Produto no dashboard). */
+const PRODUTOS_GRUPOS = [
+  { label: "Tirzepatida (Mounjaro / Zepbound) — agonista GIP/GLP-1", itens: PRODUTOS_TIRZEPATIDA },
+  { label: "Retatrutida — agonista GIP/GLP-1/Glucagon", itens: PRODUTOS_RETATRUTIDA },
+  { label: "Outros peptídeos", itens: PRODUTOS_PEPTIDEOS },
+];
+
+const PRODUTOS_SET = new Set(PRODUTOS);
+
+function buildProdutosGruposComLegado(rows) {
+  const extras = [
+    ...new Set(
+      rows
+        .map((r) => r.produto)
+        .filter((p) => p && !PRODUTOS_SET.has(p))
+    ),
+  ].sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+  const grupos = PRODUTOS_GRUPOS.map((g) => ({ label: g.label, itens: [...g.itens] }));
+  if (extras.length) {
+    grupos.push({ label: "Registros fora da lista atual", itens: extras });
+  }
+  return grupos;
+}
+
 const SINTOMAS_POR_CATEGORIA = {
   tirzepatida: [
     "Náusea",
@@ -373,11 +397,7 @@ function getFaixaEtaria(idade) {
 
 function renderForm(res, overrides = {}) {
   return res.render("form", {
-    produtosGrupos: [
-      { label: "Tirzepatida (Mounjaro / Zepbound) — agonista GIP/GLP-1", itens: PRODUTOS_TIRZEPATIDA },
-      { label: "Retatrutida — agonista GIP/GLP-1/Glucagon", itens: PRODUTOS_RETATRUTIDA },
-      { label: "Outros peptídeos", itens: PRODUTOS_PEPTIDEOS },
-    ],
+    produtosGrupos: PRODUTOS_GRUPOS,
     sintomasPorCategoriaJson: JSON.stringify(SINTOMAS_POR_CATEGORIA),
     produtoCategoriaJson: JSON.stringify(PRODUTO_CATEGORIA),
     doses: DOSES,
@@ -510,7 +530,11 @@ app.post("/submit", upload.single("foto_lote"), async (req, res) => {
 
 // --- ROTAS PROTEGIDAS (DASHBOARD) ---
 app.get("/dashboard", requireAuth, (req, res) => {
-  res.render("dashboard", { produtos: PRODUTOS, user: req.user });
+  res.render("dashboard", {
+    produtosGrupos: PRODUTOS_GRUPOS,
+    user: req.user,
+    headerDashboardNav: true,
+  });
 });
 
 app.get("/api/dashboard", requireAuth, async (req, res) => {
@@ -540,10 +564,17 @@ app.get("/api/dashboard", requireAuth, async (req, res) => {
       if (!report.negativo) acceptanceMap[key].semNegativo += 1;
     }
 
-    const acceptance = Object.values(acceptanceMap).map((item) => ({
-      produto: item.produto, sexo: item.sexo, total: item.total, semNegativo: item.semNegativo,
-      aceitacaoPercentual: item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0
-    }));
+    const acceptance = Object.values(acceptanceMap).map((item) => {
+      const comEfeitoAdverso = item.total - item.semNegativo;
+      return {
+        produto: item.produto,
+        sexo: item.sexo,
+        total: item.total,
+        semNegativo: item.semNegativo,
+        comEfeitoAdverso,
+        aceitacaoPercentual: item.total > 0 ? Number(((item.semNegativo / item.total) * 100).toFixed(2)) : 0,
+      };
+    });
 
     const symptomCount = {};
     for (const report of reports) {
@@ -587,8 +618,16 @@ app.get("/api/dashboard", requireAuth, async (req, res) => {
     }));
 
     res.json({
-      acceptance, sintomasComuns, lotesNegativos, faixasEtarias, tabela,
-      filtros: { produtos: PRODUTOS, doses: dosesDisponiveis, sexos: sexosDisponiveis }
+      acceptance,
+      sintomasComuns,
+      lotesNegativos,
+      faixasEtarias,
+      tabela,
+      filtros: {
+        produtosGrupos: buildProdutosGruposComLegado(rows),
+        doses: dosesDisponiveis,
+        sexos: sexosDisponiveis,
+      },
     });
   } catch (err) {
     console.error("Erro na API do dashboard:", err);

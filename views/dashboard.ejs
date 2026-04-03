@@ -25,7 +25,7 @@
   </noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-  <div class="container">
+  <div class="container dashboard-layout">
     <%- include("partials/header") %>
 
     <div class="card filters-card">
@@ -35,9 +35,13 @@
           <label for="filtroProduto">Marca / Produto</label>
           <select id="filtroProduto">
             <option value="">Todos</option>
-            <% if (typeof produtos !== "undefined" && Array.isArray(produtos)) { %>
-              <% produtos.forEach(function(produto) { %>
-                <option value="<%= produto %>"><%= produto %></option>
+            <% if (typeof produtosGrupos !== "undefined" && Array.isArray(produtosGrupos)) { %>
+              <% produtosGrupos.forEach(function(grupo) { %>
+                <optgroup label="<%= grupo.label %>">
+                  <% grupo.itens.forEach(function(produto) { %>
+                    <option value="<%= produto %>"><%= produto %></option>
+                  <% }) %>
+                </optgroup>
               <% }) %>
             <% } %>
           </select>
@@ -174,11 +178,29 @@
     }
 
     function preencherFiltros(filtros) {
+      const produtoSelect = document.getElementById("filtroProduto");
       const doseSelect = document.getElementById("filtroDose");
       const sexoSelect = document.getElementById("filtroSexo");
 
+      const produtoAtual = produtoSelect.value;
       const doseAtual = doseSelect.value;
       const sexoAtual = sexoSelect.value;
+
+      if (filtros.produtosGrupos && filtros.produtosGrupos.length) {
+        produtoSelect.innerHTML = '<option value="">Todos</option>';
+        filtros.produtosGrupos.forEach(function (grupo) {
+          const og = document.createElement("optgroup");
+          og.label = grupo.label;
+          (grupo.itens || []).forEach(function (p) {
+            const opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            if (String(p) === String(produtoAtual)) opt.selected = true;
+            og.appendChild(opt);
+          });
+          produtoSelect.appendChild(og);
+        });
+      }
 
       doseSelect.innerHTML = '<option value="">Todas</option>';
       (filtros.doses || []).forEach((dose) => {
@@ -209,50 +231,99 @@
     function renderCharts(data) {
       destroyCharts();
 
-      const acceptanceLabels = (data.acceptance || []).map(
-        item => `${item.produto} - ${item.sexo}`
+      const acceptanceRows = data.acceptance || [];
+      const acceptanceLabels = acceptanceRows.map(
+        (item) => `${item.produto} — ${item.sexo}`
       );
-      const acceptanceValues = (data.acceptance || []).map(
-        item => item.aceitacaoPercentual
-      );
+      const acceptanceSemAdv = acceptanceRows.map((item) => Number(item.semNegativo) || 0);
+      const acceptanceComAdv = acceptanceRows.map((item) => Number(item.comEfeitoAdverso) || 0);
 
       chartAcceptanceInstance = new Chart(document.getElementById("chartAcceptance"), {
         type: "bar",
         data: {
           labels: acceptanceLabels,
-          datasets: [{
-            label: "% de aceitação",
-            data: acceptanceValues
-          }]
+          datasets: [
+            {
+              label: "Sem efeito adverso relatado",
+              data: acceptanceSemAdv,
+              backgroundColor: "rgba(34, 197, 94, 0.85)",
+              borderColor: "rgba(21, 128, 61, 0.9)",
+              borderWidth: 1,
+              stack: "acc",
+            },
+            {
+              label: "Com efeito adverso",
+              data: acceptanceComAdv,
+              backgroundColor: "rgba(239, 68, 68, 0.85)",
+              borderColor: "rgba(185, 28, 28, 0.9)",
+              borderWidth: 1,
+              stack: "acc",
+            },
+          ],
         },
         options: {
           ...baseOptions(),
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            ...baseOptions().plugins,
+            tooltip: {
+              callbacks: {
+                footer: function (tooltipItems) {
+                  if (!tooltipItems.length) return "";
+                  const idx = tooltipItems[0].dataIndex;
+                  const row = acceptanceRows[idx];
+                  if (!row || !row.total) return "";
+                  return (
+                    "Taxa de aceitação: " +
+                    row.aceitacaoPercentual +
+                    "% (" +
+                    row.semNegativo +
+                    " de " +
+                    row.total +
+                    " sem efeito adverso)"
+                  );
+                },
+              },
+            },
+          },
           scales: {
             x: {
+              stacked: true,
               ticks: {
                 autoSkip: true,
-                maxRotation: 0,
+                maxRotation: 45,
                 minRotation: 0,
                 font: {
-                  size: isMobile() ? 10 : 12
-                }
-              }
+                  size: isMobile() ? 9 : 11,
+                },
+              },
             },
             y: {
+              stacked: true,
               beginAtZero: true,
-              max: 100,
               ticks: {
+                precision: 0,
                 font: {
-                  size: isMobile() ? 10 : 12
-                }
-              }
-            }
-          }
-        }
+                  size: isMobile() ? 10 : 12,
+                },
+              },
+            },
+          },
+        },
       });
 
       const symptomLabels = (data.sintomasComuns || []).map(item => item.sintoma);
       const symptomValues = (data.sintomasComuns || []).map(item => item.total);
+      const piePalette = [
+        "rgba(25, 34, 74, 0.9)",
+        "rgba(59, 130, 246, 0.85)",
+        "rgba(34, 197, 94, 0.85)",
+        "rgba(234, 179, 8, 0.9)",
+        "rgba(239, 68, 68, 0.85)",
+        "rgba(168, 85, 247, 0.85)",
+        "rgba(100, 116, 139, 0.9)",
+        "rgba(249, 115, 22, 0.85)",
+      ];
 
       chartSymptomsInstance = new Chart(document.getElementById("chartSymptoms"), {
         type: "pie",
@@ -260,7 +331,10 @@
           labels: symptomLabels,
           datasets: [{
             label: "Quantidade",
-            data: symptomValues
+            data: symptomValues,
+            backgroundColor: symptomLabels.map((_, i) => piePalette[i % piePalette.length]),
+            borderWidth: 1,
+            borderColor: "#fff",
           }]
         },
         options: {
@@ -291,7 +365,10 @@
           labels: ageLabels,
           datasets: [{
             label: "Quantidade de relatos",
-            data: ageValues
+            data: ageValues,
+            backgroundColor: "rgba(25, 34, 74, 0.85)",
+            borderColor: "rgba(15, 23, 42, 0.95)",
+            borderWidth: 1,
           }]
         },
         options: {
@@ -332,7 +409,10 @@
           labels: lotLabels,
           datasets: [{
             label: "Relatos negativos",
-            data: lotValues
+            data: lotValues,
+            backgroundColor: "rgba(220, 38, 38, 0.8)",
+            borderColor: "rgba(127, 29, 29, 0.95)",
+            borderWidth: 1,
           }]
         },
         options: {
