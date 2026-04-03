@@ -100,7 +100,40 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 /** Relatos com qualquer sintoma além dos neutros contam como “com efeito adverso” no dashboard. */
 const SINTOMAS_NEUTROS = new Set(["Nenhum sintoma", "Nenhum sintoma relevante"]);
 
-const PRODUTOS_TIRZEPATIDA = ["Mounjaro", "Zepbound"];
+/** Listagem original de marcas/apresentações (tirzepatida) — commit histórico c7eaa32; não reduzir ao substituir por categorias. */
+const PRODUTOS_TIRZEPATIDA = [
+  "Gluconex 15mg 4 Ampolas",
+  "Lipoland 10mg 4 Ampolas",
+  "Lipoland 15mg 4 Ampolas",
+  "Lipoland MD 15mg",
+  "Lipoless 2,5mg 4 Ampolas",
+  "Lipoless 5mg 4 Ampolas",
+  "Lipoless 7,5mg 4 Ampolas",
+  "Lipoless 10mg 4 Ampolas",
+  "Lipoless 12,5mg 4 Ampolas",
+  "Lipoless 15mg 4 Ampolas",
+  "Lipoless MD 15mg",
+  "Mounjaro 2,5mg Caneta",
+  "Mounjaro 5mg Caneta",
+  "Mounjaro 7,5mg Caneta",
+  "Mounjaro 10mg Caneta",
+  "Mounjaro 12,5mg Caneta",
+  "Mounjaro 15mg Caneta",
+  "Synedica Labs 240mg 4 Ampolas",
+  "TG 2,5mg 4 Ampolas",
+  "TG 5mg 4 Ampolas",
+  "TG 7,5mg 4 Ampolas",
+  "TG 10mg 4 Ampolas",
+  "TG 12,5mg 4 Ampolas",
+  "TG 15mg 4 Ampolas",
+  "Tirzec MD 2,5mg",
+  "Tirzec MD 5mg",
+  "Tirzec MD 7,5mg",
+  "Tirzec MD 10mg",
+  "Tirzec MD 12,5mg",
+  "Tirzec MD 15mg",
+  "Tirzec Pen 15mg",
+];
 
 const PRODUTOS_RETATRUTIDA = [
   "Synedica 40mg Caneta",
@@ -113,12 +146,42 @@ const PRODUTOS_RETATRUTIDA = [
   "TNL 40mg Caneta",
 ];
 
+/** Outros peptídeos / análogos GLP-1 fora tirzepatida/retatrutida — amplie conforme necessário. */
 const PRODUTOS_PEPTIDEOS = [
-  "Semaglutida (Ozempic / Wegovy)",
-  "Liraglutida (Saxenda / Victoza)",
+  "AOD-9604",
   "BPC-157",
-  "TB-500",
+  "CJC-1295",
+  "DSIP",
+  "Dulaglutida (Trulicity)",
+  "Epitalon",
+  "Fragmento HGH 176-191",
+  "GHK-Cu",
+  "GHRP-2",
+  "GHRP-6",
+  "Glutathiona",
+  "Hexarelin",
+  "IGF-1 LR3",
+  "Ipamorelin",
   "Ipamorelin + CJC-1295",
+  "KPV",
+  "Liraglutida (Saxenda / Victoza)",
+  "Lixisenatida (Lyxumia)",
+  "LL-37",
+  "Melanotan II",
+  "MOTS-c",
+  "NAD+",
+  "Oxytocina",
+  "PEG-MGF",
+  "Pinealon",
+  "PT-141 (Bremelanotide)",
+  "Selank",
+  "Semaglutida (Ozempic / Wegovy / Rybelsus)",
+  "Semax",
+  "Sermorelin",
+  "TB-500 (Thymosin Beta-4)",
+  "Tesamorelin",
+  "Thymosin Alpha-1",
+  "VIP",
   "Outro peptídeo",
 ];
 
@@ -182,7 +245,39 @@ const SINTOMAS_POR_CATEGORIA = {
   ],
 };
 
-const DOSES = ["10mg", "20mg", "30mg", "Outra"];
+/** Faixa granular histórica (1,0mg–15,0mg) + opção livre. */
+const DOSES = [
+  "1,0mg",
+  "1,5mg",
+  "2,0mg",
+  "2,5mg",
+  "3,0mg",
+  "3,5mg",
+  "4,0mg",
+  "4,5mg",
+  "5,0mg",
+  "5,5mg",
+  "6,0mg",
+  "6,5mg",
+  "7,0mg",
+  "7,5mg",
+  "8,0mg",
+  "8,5mg",
+  "9,0mg",
+  "9,5mg",
+  "10,0mg",
+  "10,5mg",
+  "11,0mg",
+  "11,5mg",
+  "12,0mg",
+  "12,5mg",
+  "13,0mg",
+  "13,5mg",
+  "14,0mg",
+  "14,5mg",
+  "15,0mg",
+  "Outra",
+];
 const LOCAIS_COMPRA = ["Farmácia", "Internet", "Clínica", "Outro"];
 
 const storage = multer.memoryStorage();
