@@ -61,18 +61,80 @@ function requirePesquisaAdmin(req, res, next) {
 function createPesquisaRouter(pool, bcrypt) {
   const router = express.Router();
 
+  // E-mail só conta como participante se a pesquisa foi concluída
   async function emailJaUtilizado(email, sessionToken) {
     const result = await pool.query(
       `SELECT pr.id
        FROM pesquisa_respostas pr
-       LEFT JOIN pesquisa_sessoes ps ON ps.session_token = pr.session_token
        WHERE lower(pr.email) = $1
          AND pr.session_token::text <> $2
-         AND (pr.concluida = TRUE OR ps.status = 'completed')
+         AND pr.concluida = TRUE
        LIMIT 1`,
       [email, sessionToken]
     );
     return result.rows.length > 0;
+  }
+
+  async function findIncompleteByEmail(email, excludeToken) {
+    const result = await pool.query(
+      `SELECT ps.session_token, ps.current_step, ps.respostas, ps.status, ps.updated_at
+       FROM pesquisa_sessoes ps
+       LEFT JOIN pesquisa_respostas pr ON pr.session_token = ps.session_token
+       WHERE ps.status <> 'completed'
+         AND COALESCE(pr.concluida, FALSE) = FALSE
+         AND (
+           lower(COALESCE(ps.respostas->>'email', '')) = $1
+           OR lower(COALESCE(pr.email, '')) = $1
+         )
+         AND ps.session_token::text <> $2
+       ORDER BY ps.updated_at DESC NULLS LAST
+       LIMIT 1`,
+      [email, excludeToken]
+    );
+    if (!result.rows.length) return null;
+    const row = result.rows[0];
+    return {
+      sessionToken: row.session_token,
+      currentStep: row.current_step,
+      respostas: row.respostas || {},
+      status: row.status,
+    };
+  }
+
+  async function abandonIncompleteForEmail(email, keepToken) {
+    await pool.query(
+      `UPDATE pesquisa_sessoes
+       SET status = 'abandoned',
+           respostas = COALESCE(respostas, '{}'::jsonb) - 'email',
+           updated_at = NOW()
+       WHERE status <> 'completed'
+         AND session_token::text <> $2
+         AND (
+           lower(COALESCE(respostas->>'email', '')) = $1
+           OR session_token IN (
+             SELECT session_token FROM pesquisa_respostas
+             WHERE lower(email) = $1 AND concluida IS NOT TRUE
+           )
+         )`,
+      [email, keepToken]
+    );
+    await pool.query(
+      `UPDATE pesquisa_respostas
+       SET email = NULL, updated_at = NOW()
+       WHERE lower(email) = $1
+         AND concluida IS NOT TRUE
+         AND session_token::text <> $2`,
+      [email, keepToken]
+    );
+  }
+
+  async function markSessionAbandoned(token) {
+    await pool.query(
+      `UPDATE pesquisa_sessoes
+       SET status = 'abandoned', updated_at = NOW()
+       WHERE session_token = $1 AND status <> 'completed'`,
+      [token]
+    );
   }
 
   function mapRespostasToRow(sessionToken, sessionId, respostas, concluida = false) {
@@ -190,15 +252,129 @@ function createPesquisaRouter(pool, bcrypt) {
 
       if (await emailJaUtilizado(email, sessionToken)) {
         return res.status(409).json({
-          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
           available: false,
         });
       }
 
-      res.json({ available: true, email });
+      const resume = await findIncompleteByEmail(email, sessionToken);
+      res.json({ available: true, email, resume });
     } catch (err) {
       console.error("Erro ao verificar e-mail:", err);
       res.status(500).json({ error: "Erro ao verificar e-mail", available: false });
+    }
+  });
+
+  router.post("/sessao/:token/abandonar", async (req, res) => {
+    try {
+      await markSessionAbandoned(req.params.token);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Erro ao abandonar sessão:", err);
+      res.status(500).json({ error: "Erro ao abandonar sessão" });
+    }
+  });
+
+  // Continuar sessão incompleta/abandonada encontrada pelo e-mail
+  router.post("/sessao/retomar", async (req, res) => {
+    try {
+      const email = normalizeEmail(req.body.email);
+      const currentSessionToken = req.body.currentSessionToken;
+      const resumeToken = req.body.resumeToken;
+
+      if (!email || !isValidEmail(email) || !resumeToken) {
+        return res.status(400).json({ error: "Dados inválidos para retomar a sessão" });
+      }
+
+      if (await emailJaUtilizado(email, resumeToken)) {
+        return res.status(409).json({
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+        });
+      }
+
+      const result = await pool.query(
+        "SELECT * FROM pesquisa_sessoes WHERE session_token = $1",
+        [resumeToken]
+      );
+      if (!result.rows.length) {
+        return res.status(404).json({ error: "Sessão anterior não encontrada" });
+      }
+
+      const sessao = result.rows[0];
+      if (sessao.status === "completed") {
+        return res.status(409).json({ error: "Esta sessão já foi concluída" });
+      }
+
+      const respostas = { ...(sessao.respostas || {}), email };
+      await pool.query(
+        `UPDATE pesquisa_sessoes
+         SET respostas = $1, status = 'in_progress', updated_at = NOW()
+         WHERE session_token = $2`,
+        [JSON.stringify(respostas), resumeToken]
+      );
+      await upsertResposta(resumeToken, sessao.id, respostas, false);
+
+      if (currentSessionToken && currentSessionToken !== resumeToken) {
+        await markSessionAbandoned(currentSessionToken);
+      }
+
+      res.json({
+        sessionToken: resumeToken,
+        currentStep: sessao.current_step,
+        respostas,
+        status: "in_progress",
+      });
+    } catch (err) {
+      console.error("Erro ao retomar sessão:", err);
+      res.status(500).json({ error: "Erro ao retomar pesquisa" });
+    }
+  });
+
+  // Descartar progressos incompletos do e-mail e seguir com a sessão atual
+  router.post("/sessao/reiniciar", async (req, res) => {
+    try {
+      const email = normalizeEmail(req.body.email);
+      const sessionToken = req.body.sessionToken;
+
+      if (!email || !isValidEmail(email) || !sessionToken) {
+        return res.status(400).json({ error: "Dados inválidos para reiniciar" });
+      }
+
+      if (await emailJaUtilizado(email, sessionToken)) {
+        return res.status(409).json({
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+        });
+      }
+
+      await abandonIncompleteForEmail(email, sessionToken);
+
+      const existing = await pool.query(
+        "SELECT * FROM pesquisa_sessoes WHERE session_token = $1",
+        [sessionToken]
+      );
+      if (!existing.rows.length) {
+        return res.status(404).json({ error: "Sessão não encontrada" });
+      }
+
+      const sessao = existing.rows[0];
+      const respostas = { ...(sessao.respostas || {}), email };
+      await pool.query(
+        `UPDATE pesquisa_sessoes
+         SET respostas = $1, status = 'in_progress', current_step = GREATEST(current_step, 1), updated_at = NOW()
+         WHERE session_token = $2`,
+        [JSON.stringify(respostas), sessionToken]
+      );
+      await upsertResposta(sessionToken, sessao.id, respostas, false);
+
+      res.json({
+        sessionToken,
+        currentStep: Math.max(sessao.current_step || 1, 1),
+        respostas,
+        status: "in_progress",
+      });
+    } catch (err) {
+      console.error("Erro ao reiniciar sessão:", err);
+      res.status(500).json({ error: "Erro ao reiniciar pesquisa" });
     }
   });
 
@@ -255,6 +431,10 @@ function createPesquisaRouter(pool, bcrypt) {
       }
 
       const sessao = existing.rows[0];
+      if (sessao.status === "completed") {
+        return res.status(409).json({ error: "Esta pesquisa já foi concluída" });
+      }
+
       const mergedRespostas = { ...sessao.respostas, ...respostas };
       const email = normalizeEmail(mergedRespostas.email);
 
@@ -264,14 +444,18 @@ function createPesquisaRouter(pool, bcrypt) {
         }
         if (await emailJaUtilizado(email, req.params.token)) {
           return res.status(409).json({
-            error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+            error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
           });
         }
         mergedRespostas.email = email;
       }
 
       const newStep = currentStep || sessao.current_step;
-      const newStatus = status || sessao.status;
+      // Sessão abandonada volta a in_progress ao salvar progresso
+      let newStatus = status;
+      if (!newStatus) {
+        newStatus = sessao.status === "abandoned" ? "in_progress" : sessao.status;
+      }
 
       await pool.query(
         `UPDATE pesquisa_sessoes
@@ -293,7 +477,7 @@ function createPesquisaRouter(pool, bcrypt) {
     } catch (err) {
       if (err.code === "23505") {
         return res.status(409).json({
-          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
         });
       }
       console.error("Erro ao salvar sessão:", err);
@@ -320,7 +504,7 @@ function createPesquisaRouter(pool, bcrypt) {
       }
       if (await emailJaUtilizado(email, req.params.token)) {
         return res.status(409).json({
-          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
         });
       }
       mergedRespostas.email = email;
@@ -338,7 +522,7 @@ function createPesquisaRouter(pool, bcrypt) {
     } catch (err) {
       if (err.code === "23505") {
         return res.status(409).json({
-          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
         });
       }
       console.error("Erro ao concluir pesquisa:", err);

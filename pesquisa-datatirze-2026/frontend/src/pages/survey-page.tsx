@@ -11,10 +11,21 @@ import {
   StepConteudo,
   StepConclusao,
 } from "@/components/survey-steps";
-import { createSession, fetchConfig, fetchSession, saveSession, completeSession, verifyEmail } from "@/lib/api";
+import {
+  createSession,
+  fetchConfig,
+  fetchSession,
+  saveSession,
+  completeSession,
+  verifyEmail,
+  resumeSession,
+  restartSession,
+  abandonSession,
+} from "@/lib/api";
 import { getStepLabel, getVisibleSteps, SESSION_KEY } from "@/lib/utils";
 import { validateStep } from "@/lib/validation";
 import { useSurveyStore } from "@/store/survey-store";
+import type { SessaoResponse } from "@/types/pesquisa";
 
 export function SurveyPage() {
   const {
@@ -37,10 +48,13 @@ export function SurveyPage() {
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingResume, setPendingResume] = useState<SessaoResponse | null>(null);
+  const [resumeBusy, setResumeBusy] = useState(false);
 
   const visibleSteps = getVisibleSteps(respostas.utilizouTirzepatida);
   const stepIndex = visibleSteps.indexOf(currentStep);
   const isCompleted = status === "completed";
+  const canRestart = !isCompleted && currentStep !== 9;
 
   const init = useCallback(async () => {
     try {
@@ -56,6 +70,7 @@ export function SurveyPage() {
             setLoading(false);
             return;
           }
+          localStorage.removeItem(SESSION_KEY);
         } catch {
           localStorage.removeItem(SESSION_KEY);
         }
@@ -105,6 +120,88 @@ export function SurveyPage() {
     autoSave(currentStep, next);
   }
 
+  async function applySession(sessao: SessaoResponse) {
+    localStorage.setItem(SESSION_KEY, sessao.sessionToken);
+    setSession(sessao.sessionToken, sessao.currentStep, sessao.respostas, sessao.status);
+    setPendingResume(null);
+    setErrors({});
+    setSubmitError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleContinueResume() {
+    if (!pendingResume || !sessionToken) return;
+    setResumeBusy(true);
+    try {
+      const sessao = await resumeSession({
+        email: respostas.email || pendingResume.respostas?.email || "",
+        currentSessionToken: sessionToken,
+        resumeToken: pendingResume.sessionToken,
+      });
+      await applySession(sessao);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erro ao continuar pesquisa");
+    } finally {
+      setResumeBusy(false);
+    }
+  }
+
+  async function handleRestartFromModal() {
+    if (!sessionToken) return;
+    setResumeBusy(true);
+    try {
+      const email = respostas.email || "";
+      const sessao = await restartSession({ email, sessionToken });
+      const nextRespostas = { ...sessao.respostas, email };
+      await saveSession(sessao.sessionToken, {
+        currentStep: 2,
+        respostas: nextRespostas,
+        status: "in_progress",
+      });
+      localStorage.setItem(SESSION_KEY, sessao.sessionToken);
+      setSession(sessao.sessionToken, 2, nextRespostas, "in_progress");
+      setPendingResume(null);
+      setErrors({});
+      setSubmitError(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erro ao reiniciar pesquisa");
+    } finally {
+      setResumeBusy(false);
+    }
+  }
+
+  async function handleStartOver() {
+    if (!confirm("Descartar o progresso atual e começar do zero?")) return;
+    setSubmitError(null);
+    try {
+      const email = respostas.email;
+      const previousToken = sessionToken;
+      const nova = await createSession();
+
+      if (email) {
+        await restartSession({ email, sessionToken: nova.sessionToken });
+      } else if (previousToken) {
+        await abandonSession(previousToken);
+      }
+
+      localStorage.setItem(SESSION_KEY, nova.sessionToken);
+      const respostasNova = email ? { email } : {};
+      setSession(nova.sessionToken, 1, respostasNova, "in_progress");
+      setErrors({});
+      if (email) {
+        await saveSession(nova.sessionToken, {
+          currentStep: 1,
+          respostas: respostasNova,
+          status: "in_progress",
+        });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Erro ao reiniciar");
+    }
+  }
+
   async function handleNext() {
     const stepErrors = validateStep(currentStep, respostas);
     if (Object.keys(stepErrors).length > 0) {
@@ -116,7 +213,11 @@ export function SurveyPage() {
 
     try {
       if (currentStep === 1 && sessionToken) {
-        await verifyEmail(respostas.email || "", sessionToken);
+        const verification = await verifyEmail(respostas.email || "", sessionToken);
+        if (verification.resume && verification.resume.sessionToken !== sessionToken) {
+          setPendingResume(verification.resume);
+          return;
+        }
       }
 
       // Quem não usa: encerra na etapa 2
@@ -127,7 +228,7 @@ export function SurveyPage() {
         return;
       }
 
-      // Quem usa: conclui de fato na etapa 8 (antes só avançava para 9 sem marcar no banco)
+      // Quem usa: conclui de fato na etapa 8
       if (currentStep === 8) {
         await completeSession(sessionToken!, respostas);
         setSession(sessionToken!, 9, respostas, "completed");
@@ -215,15 +316,29 @@ export function SurveyPage() {
 
   const showNav = !isCompleted || currentStep === 9;
   const progressStep = isCompleted ? visibleSteps.length : stepIndex + 1;
+  const resumeStep = pendingResume
+    ? Math.max(1, pendingResume.currentStep || 1)
+    : 1;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 to-slate-50">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-2xl px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">DataTirze 2026</p>
-          <h1 className="text-lg font-bold text-brand-900 sm:text-xl">
-            Pesquisa Nacional sobre o Uso de Tirzepatida no Brasil
-          </h1>
+        <div className="mx-auto flex max-w-2xl items-start justify-between gap-4 px-4 py-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">DataTirze 2026</p>
+            <h1 className="text-lg font-bold text-brand-900 sm:text-xl">
+              Pesquisa Nacional sobre o Uso de Tirzepatida no Brasil
+            </h1>
+          </div>
+          {canRestart && (
+            <button
+              type="button"
+              onClick={handleStartOver}
+              className="shrink-0 text-xs text-slate-500 underline-offset-2 hover:text-brand-700 hover:underline"
+            >
+              Começar do zero
+            </button>
+          )}
         </div>
       </header>
 
@@ -271,8 +386,46 @@ export function SurveyPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-400">
-        Uma resposta por e-mail · DataTirze · 2026
+        Uma participação concluída por e-mail · DataTirze · 2026
       </footer>
+
+      {pendingResume && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-brand-900">Pesquisa em andamento</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Encontramos uma resposta incompleta para este e-mail (por volta da etapa {resumeStep}).
+              Você pode continuar de onde parou ou começar novamente.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                disabled={resumeBusy}
+                onClick={handleContinueResume}
+                className="btn-primary flex-1 disabled:opacity-50"
+              >
+                Continuar de onde parei
+              </button>
+              <button
+                type="button"
+                disabled={resumeBusy}
+                onClick={handleRestartFromModal}
+                className="btn-secondary flex-1 disabled:opacity-50"
+              >
+                Começar do zero
+              </button>
+            </div>
+            <button
+              type="button"
+              disabled={resumeBusy}
+              onClick={() => setPendingResume(null)}
+              className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-600"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

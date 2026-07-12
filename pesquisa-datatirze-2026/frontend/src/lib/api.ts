@@ -58,10 +58,37 @@ export function completeSession(
 export function verifyEmail(
   email: string,
   sessionToken: string
-): Promise<{ available: boolean; email?: string }> {
+): Promise<{ available: boolean; email?: string; resume?: SessaoResponse | null }> {
   return request(`${API_BASE}/verificar-email`, {
     method: "POST",
     body: JSON.stringify({ email, sessionToken }),
+  });
+}
+
+export function resumeSession(data: {
+  email: string;
+  currentSessionToken: string;
+  resumeToken: string;
+}): Promise<SessaoResponse> {
+  return request(`${API_BASE}/sessao/retomar`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function restartSession(data: {
+  email: string;
+  sessionToken: string;
+}): Promise<SessaoResponse> {
+  return request(`${API_BASE}/sessao/reiniciar`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function abandonSession(token: string): Promise<{ success: boolean }> {
+  return request(`${API_BASE}/sessao/${token}/abandonar`, {
+    method: "POST",
   });
 }
 
