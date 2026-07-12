@@ -7,6 +7,7 @@ const path = require("path");
 // Pesquisa Nacional 2026
 const { initPesquisaDb } = require("./pesquisa-datatirze-2026/backend/db");
 const { createPesquisaRouter } = require("./pesquisa-datatirze-2026/backend/routes");
+const { ensurePesquisaAdminUser } = require("./pesquisa-datatirze-2026/backend/admin-user");
 
 // --- NOVAS IMPORTAÇÕES DE AUTENTICAÇÃO ---
 const session = require("express-session");
@@ -369,6 +370,7 @@ async function initDb() {
   await ensureColumnExists("aceite_privacidade_em", "TIMESTAMP");
 
   await initPesquisaDb(pool);
+  await ensurePesquisaAdminUser(pool);
 }
 
 // --- FUNÇÕES AUXILIARES ---
@@ -543,6 +545,10 @@ app.get("/dashboard", requireAuth, (req, res) => {
   });
 });
 
+app.get("/pesquisa-admin", (req, res) => {
+  res.redirect("/pesquisa/admin");
+});
+
 app.get("/api/dashboard", requireAuth, async (req, res) => {
   const { produto, dose, sexo } = req.query;
 
@@ -642,7 +648,7 @@ app.get("/api/dashboard", requireAuth, async (req, res) => {
 });
 
 // --- PESQUISA NACIONAL 2026 ---
-const pesquisaRouter = createPesquisaRouter(pool, requireAuth);
+const pesquisaRouter = createPesquisaRouter(pool, bcrypt);
 app.use("/api/pesquisa", pesquisaRouter);
 
 const pesquisaDistPath = path.join(__dirname, "pesquisa-datatirze-2026", "dist");

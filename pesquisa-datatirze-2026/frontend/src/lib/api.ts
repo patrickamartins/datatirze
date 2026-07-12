@@ -68,3 +68,18 @@ export function getExportUrl(format: "csv" | "excel", params: Record<string, str
   const query = new URLSearchParams(params).toString();
   return `${API_BASE}/admin/export/${format}?${query}`;
 }
+
+export function adminLogin(email: string, senha: string): Promise<{ success: boolean; user: { id: number; nome: string; email: string } }> {
+  return request(`${API_BASE}/admin/login`, {
+    method: "POST",
+    body: JSON.stringify({ email, senha }),
+  });
+}
+
+export function adminMe(): Promise<{ authenticated: boolean; user?: { id: number; nome: string; email: string } }> {
+  return request(`${API_BASE}/admin/me`);
+}
+
+export function adminLogout(): Promise<{ success: boolean }> {
+  return request(`${API_BASE}/admin/logout`, { method: "POST" });
+}

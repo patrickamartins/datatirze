@@ -15,7 +15,49 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function createPesquisaRouter(pool, requireAuth) {
+function buildFilterQuery(query, { onlyCompleted = true } = {}) {
+  const { estado, marca, dataInicio, dataFim } = query;
+  const conditions = [];
+  const params = [];
+
+  if (onlyCompleted) {
+    conditions.push("concluida = TRUE");
+  }
+  if (estado) {
+    params.push(estado);
+    conditions.push(`estado = $${params.length}`);
+  }
+  if (marca) {
+    params.push(marca);
+    conditions.push(`marca_atual = $${params.length}`);
+  }
+  if (dataInicio) {
+    params.push(dataInicio);
+    conditions.push(`created_at >= $${params.length}::date`);
+  }
+  if (dataFim) {
+    params.push(dataFim);
+    conditions.push(`created_at < ($${params.length}::date + INTERVAL '1 day')`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return { where, params };
+}
+
+function requirePesquisaAdmin(req, res, next) {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ error: "Não autenticado", code: "UNAUTHENTICATED" });
+  }
+  if (!req.user?.is_admin) {
+    return res.status(403).json({
+      error: "Acesso restrito a administradores da pesquisa",
+      code: "FORBIDDEN",
+    });
+  }
+  return next();
+}
+
+function createPesquisaRouter(pool, bcrypt) {
   const router = express.Router();
 
   async function emailJaUtilizado(email, sessionToken) {
@@ -119,32 +161,6 @@ function createPesquisaRouter(pool, requireAuth) {
       cols.map((c) => row[c])
     );
     return result.rows[0].id;
-  }
-
-  function buildFilterQuery(query) {
-    const { estado, marca, dataInicio, dataFim } = query;
-    const conditions = [];
-    const params = [];
-
-    if (estado) {
-      params.push(estado);
-      conditions.push(`estado = $${params.length}`);
-    }
-    if (marca) {
-      params.push(marca);
-      conditions.push(`marca_atual = $${params.length}`);
-    }
-    if (dataInicio) {
-      params.push(dataInicio);
-      conditions.push(`created_at >= $${params.length}::date`);
-    }
-    if (dataFim) {
-      params.push(dataFim);
-      conditions.push(`created_at < ($${params.length}::date + INTERVAL '1 day')`);
-    }
-
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-    return { where, params };
   }
 
   router.get("/config", (_req, res) => {
@@ -327,27 +343,91 @@ function createPesquisaRouter(pool, requireAuth) {
     }
   });
 
-  router.get("/admin/dashboard", requireAuth, async (req, res) => {
+  router.post("/admin/login", async (req, res) => {
     try {
-      const { where, params } = buildFilterQuery(req.query);
+      const email = normalizeEmail(req.body.email);
+      const senha = req.body.senha;
+
+      if (!email || !senha) {
+        return res.status(400).json({ error: "Informe e-mail e senha" });
+      }
+
+      const result = await pool.query("SELECT * FROM users WHERE lower(email) = $1", [email]);
+      const user = result.rows[0];
+
+      if (!user || !user.senha || !(await bcrypt.compare(senha, user.senha))) {
+        return res.status(401).json({ error: "E-mail ou senha inválidos" });
+      }
+
+      if (!user.is_admin) {
+        return res.status(403).json({ error: "Este usuário não tem acesso ao painel da pesquisa" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Erro no login admin:", err);
+          return res.status(500).json({ error: "Erro ao autenticar" });
+        }
+        return res.json({
+          success: true,
+          user: { id: user.id, nome: user.nome, email: user.email },
+        });
+      });
+    } catch (err) {
+      console.error("Erro no login admin da pesquisa:", err);
+      res.status(500).json({ error: "Erro ao processar login" });
+    }
+  });
+
+  router.get("/admin/me", (req, res) => {
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user?.is_admin) {
+      return res.status(401).json({ authenticated: false });
+    }
+    res.json({
+      authenticated: true,
+      user: { id: req.user.id, nome: req.user.nome, email: req.user.email },
+    });
+  });
+
+  router.post("/admin/logout", (req, res) => {
+    req.logout(() => res.json({ success: true }));
+  });
+
+  router.get("/admin/dashboard", requirePesquisaAdmin, async (req, res) => {
+    try {
+      const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
       const result = await pool.query(
         `SELECT * FROM pesquisa_respostas ${where} ORDER BY created_at DESC`,
         params
       );
       const rows = result.rows.map((row) => ({
         ...row,
-        fatores_compra: typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
+        fatores_compra:
+          typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
-      res.json(buildDashboardData(rows));
+
+      const [emAndamento, concluidas] = await Promise.all([
+        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'in_progress'`),
+        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
+      ]);
+
+      const dashboard = buildDashboardData(rows);
+      dashboard.resumo = {
+        respostasConcluidas: concluidas.rows[0].total,
+        sessoesEmAndamento: emAndamento.rows[0].total,
+        filtradas: rows.length,
+      };
+
+      res.json(dashboard);
     } catch (err) {
       console.error("Erro no dashboard da pesquisa:", err);
       res.status(500).json({ error: "Erro ao carregar dashboard" });
     }
   });
 
-  router.get("/admin/export/csv", requireAuth, async (req, res) => {
+  router.get("/admin/export/csv", requirePesquisaAdmin, async (req, res) => {
     try {
-      const { where, params } = buildFilterQuery(req.query);
+      const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
       const result = await pool.query(
         `SELECT * FROM pesquisa_respostas ${where} ORDER BY created_at DESC`,
         params
@@ -362,9 +442,9 @@ function createPesquisaRouter(pool, requireAuth) {
     }
   });
 
-  router.get("/admin/export/excel", requireAuth, async (req, res) => {
+  router.get("/admin/export/excel", requirePesquisaAdmin, async (req, res) => {
     try {
-      const { where, params } = buildFilterQuery(req.query);
+      const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
       const result = await pool.query(
         `SELECT * FROM pesquisa_respostas ${where} ORDER BY created_at DESC`,
         params

@@ -84,8 +84,21 @@ As tabelas são criadas automaticamente na inicialização:
 
 ## Admin
 
-Acesse `/pesquisa/admin` após login em `/login`. O painel exibe:
+Acesse `/pesquisa/admin` (login em `/pesquisa/admin/login`).
 
+### Usuário administrativo (criado automaticamente no boot)
+
+| Campo | Valor padrão | Variável de ambiente |
+|-------|--------------|----------------------|
+| E-mail | `admin@datatirze.com` | `PESQUISA_ADMIN_EMAIL` |
+| Senha | `DataTirzeAdmin2026!` | `PESQUISA_ADMIN_PASSWORD` |
+| Nome | Admin Pesquisa DataTirze | `PESQUISA_ADMIN_NOME` |
+
+Para forçar reset da senha no próximo deploy: `PESQUISA_ADMIN_RESET_PASSWORD=true`.
+
+O painel exibe:
+
+- Quantidade de respostas concluídas e sessões em andamento
 - Distribuição demográfica
 - Marcas utilizadas e percebidas
 - Hábitos de compra e preço justo

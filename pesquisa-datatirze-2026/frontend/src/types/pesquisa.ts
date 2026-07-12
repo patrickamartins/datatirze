@@ -73,6 +73,11 @@ export interface DashboardData {
   total: number;
   utilizadores: number;
   naoUtilizadoresTotal: number;
+  resumo?: {
+    respostasConcluidas: number;
+    sessoesEmAndamento: number;
+    filtradas: number;
+  };
   demografia: {
     idade: ChartItem[];
     genero: ChartItem[];

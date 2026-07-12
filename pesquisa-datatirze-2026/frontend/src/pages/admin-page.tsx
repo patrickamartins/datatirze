@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BarChartPanel, ChartCard, PieChartPanel, StatCard } from "@/components/charts";
-import { fetchDashboard, getExportUrl } from "@/lib/api";
+import { adminLogout, adminMe, fetchDashboard, getExportUrl } from "@/lib/api";
 import type { DashboardData } from "@/types/pesquisa";
 import { Download, RefreshCw, LogOut } from "lucide-react";
 
 export function AdminPage() {
+  const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [adminName, setAdminName] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +18,23 @@ export function AdminPage() {
     dataInicio: "",
     dataFim: "",
   });
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const me = await adminMe();
+        if (!me.authenticated) {
+          navigate("/admin/login", { replace: true });
+          return;
+        }
+        setAdminName(me.user?.nome || "Admin");
+        setAuthChecked(true);
+      } catch {
+        navigate("/admin/login", { replace: true });
+      }
+    }
+    checkAuth();
+  }, [navigate]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -27,21 +48,23 @@ export function AdminPage() {
       const result = await fetchDashboard(params);
       setData(result);
     } catch (err) {
-      if (err instanceof Error && err.message.includes("requisição")) {
-        window.location.href = "/login?redirect=/pesquisa/admin";
+      const message = err instanceof Error ? err.message : "Erro ao carregar dados";
+      if (message.includes("Não autenticado") || message.includes("restrito")) {
+        navigate("/admin/login", { replace: true });
         return;
       }
-      setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+      setError(message);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, navigate]);
 
   useEffect(() => {
+    if (!authChecked) return;
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [authChecked, load]);
 
   function handleExport(format: "csv" | "excel") {
     const params: Record<string, string> = {};
@@ -52,7 +75,16 @@ export function AdminPage() {
     window.open(getExportUrl(format, params), "_blank");
   }
 
-  if (loading && !data) {
+  async function handleLogout() {
+    try {
+      await adminLogout();
+    } catch {
+      // segue para login mesmo se a sessão já tiver expirado
+    }
+    navigate("/admin/login", { replace: true });
+  }
+
+  if (!authChecked || (loading && !data)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600" />
@@ -82,6 +114,7 @@ export function AdminPage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Admin · DataTirze 2026</p>
             <h1 className="text-xl font-bold text-brand-900">Painel da Pesquisa Nacional</h1>
+            <p className="text-xs text-slate-500">Olá, {adminName}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={load} className="btn-secondary flex items-center gap-2 text-xs">
@@ -96,15 +129,36 @@ export function AdminPage() {
               <Download className="h-4 w-4" />
               Excel
             </button>
-            <a href="/logout" className="btn-secondary flex items-center gap-2 text-xs">
+            <button type="button" onClick={handleLogout} className="btn-secondary flex items-center gap-2 text-xs">
               <LogOut className="h-4 w-4" />
               Sair
-            </a>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Respostas concluídas"
+            value={data.resumo?.respostasConcluidas ?? data.total}
+          />
+          <StatCard
+            label="Exibidas nos filtros"
+            value={data.resumo?.filtradas ?? data.total}
+          />
+          <StatCard
+            label="Sessões em andamento"
+            value={data.resumo?.sessoesEmAndamento ?? 0}
+          />
+          <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+          <StatCard label="Já utilizaram tirzepatida" value={data.utilizadores} />
+          <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal} />
+        </div>
+
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-700">Filtros</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -153,13 +207,6 @@ export function AdminPage() {
               />
             </div>
           </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total de respostas" value={data.total} />
-          <StatCard label="Usuários ativos" value={data.utilizadores} sub="Já utilizaram" />
-          <StatCard label="Não usuários" value={data.naoUtilizadoresTotal} />
-          <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
         </div>
 
         {data.insights.length > 0 && (
