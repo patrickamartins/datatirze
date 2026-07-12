@@ -72,6 +72,8 @@ As tabelas são criadas automaticamente na inicialização:
 | Tirzedral | Catedral |
 | T36 | Catedral |
 | Gluconex | Lasca |
+| Mounjaro | Eli Lilly |
+| Manipulada | Farmácia de Manipulação |
 
 ## Fluxo condicional
 

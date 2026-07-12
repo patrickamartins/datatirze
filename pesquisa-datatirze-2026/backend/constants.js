@@ -7,6 +7,8 @@ const MARCAS = [
   { id: "tirzedral", label: "Tirzedral", fabricante: "Catedral" },
   { id: "t36", label: "T36", fabricante: "Catedral" },
   { id: "gluconex", label: "Gluconex", fabricante: "Lasca" },
+  { id: "mounjaro", label: "Mounjaro", fabricante: "Eli Lilly" },
+  { id: "manipulada", label: "Manipulada", fabricante: "Farmácia de Manipulação" },
 ];
 
 const DOSES = ["2,5mg", "5mg", "7,5mg", "10mg", "12,5mg", "15mg"];
