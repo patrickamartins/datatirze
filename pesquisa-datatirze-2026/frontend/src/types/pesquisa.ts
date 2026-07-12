@@ -13,6 +13,7 @@ export interface PesquisaConfig {
 }
 
 export interface PesquisaRespostas {
+  email?: string;
   idade?: string;
   genero?: string;
   estado?: string;

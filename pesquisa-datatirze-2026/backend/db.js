@@ -17,6 +17,7 @@ async function initPesquisaDb(pool) {
       id SERIAL PRIMARY KEY,
       session_id INTEGER REFERENCES pesquisa_sessoes(id) ON DELETE SET NULL,
       session_token UUID NOT NULL,
+      email TEXT,
       idade TEXT,
       genero TEXT,
       estado TEXT,
@@ -75,6 +76,20 @@ async function initPesquisaDb(pool) {
   `);
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_pesquisa_sessoes_token ON pesquisa_sessoes(session_token)
+  `);
+
+  await pool.query(`
+    ALTER TABLE pesquisa_respostas ADD COLUMN IF NOT EXISTS email TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE pesquisa_respostas ADD COLUMN IF NOT EXISTS concluida BOOLEAN DEFAULT FALSE
+  `);
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pesquisa_respostas_email_concluida_unique
+    ON pesquisa_respostas (lower(email))
+    WHERE email IS NOT NULL AND concluida = TRUE
   `);
 }
 

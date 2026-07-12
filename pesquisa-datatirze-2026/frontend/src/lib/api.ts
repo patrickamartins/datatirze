@@ -49,6 +49,16 @@ export function completeSession(
   });
 }
 
+export function verifyEmail(
+  email: string,
+  sessionToken: string
+): Promise<{ available: boolean; email?: string }> {
+  return request(`${API_BASE}/verificar-email`, {
+    method: "POST",
+    body: JSON.stringify({ email, sessionToken }),
+  });
+}
+
 export function fetchDashboard(params: Record<string, string>): Promise<DashboardData> {
   const query = new URLSearchParams(params).toString();
   return request<DashboardData>(`${API_BASE}/admin/dashboard?${query}`);

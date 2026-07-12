@@ -4,14 +4,41 @@ const { MARCAS, DOSES, ESTADOS_BR, OPCOES, TOTAL_STEPS } = require("./constants"
 const { buildDashboardData } = require("./analytics");
 const { rowsToCsv, rowsToExcelBuffer } = require("./export");
 
+function normalizeEmail(email) {
+  if (!email || typeof email !== "string") return null;
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return null;
+  return trimmed;
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function createPesquisaRouter(pool, requireAuth) {
   const router = express.Router();
 
-  function mapRespostasToRow(sessionToken, sessionId, respostas) {
+  async function emailJaUtilizado(email, sessionToken) {
+    const result = await pool.query(
+      `SELECT pr.id
+       FROM pesquisa_respostas pr
+       LEFT JOIN pesquisa_sessoes ps ON ps.session_token = pr.session_token
+       WHERE lower(pr.email) = $1
+         AND pr.session_token::text <> $2
+         AND (pr.concluida = TRUE OR ps.status = 'completed')
+       LIMIT 1`,
+      [email, sessionToken]
+    );
+    return result.rows.length > 0;
+  }
+
+  function mapRespostasToRow(sessionToken, sessionId, respostas, concluida = false) {
     const r = respostas || {};
     return {
       session_id: sessionId,
       session_token: sessionToken,
+      email: normalizeEmail(r.email),
+      concluida: Boolean(concluida),
       idade: r.idade || null,
       genero: r.genero || null,
       estado: r.estado || null,
@@ -59,8 +86,8 @@ function createPesquisaRouter(pool, requireAuth) {
     };
   }
 
-  async function upsertResposta(sessionToken, sessionId, respostas) {
-    const row = mapRespostasToRow(sessionToken, sessionId, respostas);
+  async function upsertResposta(sessionToken, sessionId, respostas, concluida = false) {
+    const row = mapRespostasToRow(sessionToken, sessionId, respostas, concluida);
     const existing = await pool.query(
       "SELECT id FROM pesquisa_respostas WHERE session_token = $1",
       [sessionToken]
@@ -122,6 +149,32 @@ function createPesquisaRouter(pool, requireAuth) {
     });
   });
 
+  router.post("/verificar-email", async (req, res) => {
+    try {
+      const email = normalizeEmail(req.body.email);
+      const sessionToken = req.body.sessionToken;
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ error: "Informe um e-mail válido", available: false });
+      }
+      if (!sessionToken) {
+        return res.status(400).json({ error: "Sessão inválida", available: false });
+      }
+
+      if (await emailJaUtilizado(email, sessionToken)) {
+        return res.status(409).json({
+          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          available: false,
+        });
+      }
+
+      res.json({ available: true, email });
+    } catch (err) {
+      console.error("Erro ao verificar e-mail:", err);
+      res.status(500).json({ error: "Erro ao verificar e-mail", available: false });
+    }
+  });
+
   router.post("/sessao", async (_req, res) => {
     try {
       const token = crypto.randomUUID();
@@ -176,6 +229,20 @@ function createPesquisaRouter(pool, requireAuth) {
 
       const sessao = existing.rows[0];
       const mergedRespostas = { ...sessao.respostas, ...respostas };
+      const email = normalizeEmail(mergedRespostas.email);
+
+      if (email) {
+        if (!isValidEmail(email)) {
+          return res.status(400).json({ error: "Informe um e-mail válido" });
+        }
+        if (await emailJaUtilizado(email, req.params.token)) {
+          return res.status(409).json({
+            error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+          });
+        }
+        mergedRespostas.email = email;
+      }
+
       const newStep = currentStep || sessao.current_step;
       const newStatus = status || sessao.status;
 
@@ -187,7 +254,7 @@ function createPesquisaRouter(pool, requireAuth) {
         [newStep, JSON.stringify(mergedRespostas), newStatus, req.params.token]
       );
 
-      await upsertResposta(req.params.token, sessao.id, mergedRespostas);
+      await upsertResposta(req.params.token, sessao.id, mergedRespostas, newStatus === "completed");
 
       res.json({
         sessionToken: req.params.token,
@@ -197,6 +264,11 @@ function createPesquisaRouter(pool, requireAuth) {
         saved: true,
       });
     } catch (err) {
+      if (err.code === "23505") {
+        return res.status(409).json({
+          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+        });
+      }
       console.error("Erro ao salvar sessão:", err);
       res.status(500).json({ error: "Erro ao salvar progresso" });
     }
@@ -214,6 +286,17 @@ function createPesquisaRouter(pool, requireAuth) {
 
       const sessao = existing.rows[0];
       const mergedRespostas = { ...sessao.respostas, ...req.body.respostas };
+      const email = normalizeEmail(mergedRespostas.email);
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ error: "Informe um e-mail válido para concluir a pesquisa" });
+      }
+      if (await emailJaUtilizado(email, req.params.token)) {
+        return res.status(409).json({
+          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+        });
+      }
+      mergedRespostas.email = email;
 
       await pool.query(
         `UPDATE pesquisa_sessoes
@@ -222,10 +305,15 @@ function createPesquisaRouter(pool, requireAuth) {
         [JSON.stringify(mergedRespostas), TOTAL_STEPS, req.params.token]
       );
 
-      await upsertResposta(req.params.token, sessao.id, mergedRespostas);
+      await upsertResposta(req.params.token, sessao.id, mergedRespostas, true);
 
       res.json({ success: true, respostas: mergedRespostas });
     } catch (err) {
+      if (err.code === "23505") {
+        return res.status(409).json({
+          error: "Este e-mail já respondeu a pesquisa. Cada pessoa pode participar apenas uma vez.",
+        });
+      }
       console.error("Erro ao concluir pesquisa:", err);
       res.status(500).json({ error: "Erro ao concluir pesquisa" });
     }

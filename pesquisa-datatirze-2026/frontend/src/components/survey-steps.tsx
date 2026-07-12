@@ -21,7 +21,18 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Seu perfil</h2>
-      <p className="mb-6 text-sm text-slate-500">Leva cerca de 1 minuto. Todas as respostas são anônimas.</p>
+      <p className="mb-6 text-sm text-slate-500">
+        Leva cerca de 1 minuto. O e-mail garante uma resposta por pessoa e não será exibido publicamente.
+      </p>
+
+      <TextInput
+        label="E-mail *"
+        type="email"
+        value={respostas.email || ""}
+        onChange={(v) => onChange({ email: v })}
+        error={errors.email}
+        placeholder="seuemail@exemplo.com"
+      />
 
       <OptionGroup label="Qual sua idade?" error={errors.idade}>
         {config.opcoes.idade.map((opt) => (

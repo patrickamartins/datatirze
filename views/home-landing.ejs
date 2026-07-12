@@ -30,7 +30,6 @@
   <section class="video-section">
     <div class="video-container">
       <iframe width="1280" height="720" src="https://www.youtube.com/embed/2N0Ysa2W7bI?si=ARtlaq0wdsrvHSQf&amp;controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-      </video>
     </div>
     <div class="info-block">
       <h2>Por que o DataTirze?</h2>
@@ -39,5 +38,61 @@
   </section>
 
   <%- include("partials/footer") %>
+
+  <div id="pesquisa-modal" class="pesquisa-modal" role="dialog" aria-modal="true" aria-labelledby="pesquisa-modal-title" hidden>
+    <div class="pesquisa-modal-backdrop" data-close-pesquisa-modal></div>
+    <div class="pesquisa-modal-card">
+      <button type="button" class="pesquisa-modal-close" data-close-pesquisa-modal aria-label="Fechar">×</button>
+      <p class="pesquisa-modal-eyebrow">Nova · 2026</p>
+      <h2 id="pesquisa-modal-title">Pesquisa Nacional sobre Tirzepatida</h2>
+      <p class="pesquisa-modal-text">
+        Ajude a mapear o uso de tirzepatida no Brasil. São cerca de 5 a 8 minutos — com perguntas
+        condicionais, você só responde o que for relevante. Sua participação fortalece a maior base
+        de inteligência de mercado sobre esse tratamento no país.
+      </p>
+      <div class="pesquisa-modal-actions">
+        <a href="/pesquisa/" class="btn btn-primary btn-large">Participar da pesquisa</a>
+        <button type="button" class="btn btn-secondary" data-close-pesquisa-modal>Agora não</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var modal = document.getElementById("pesquisa-modal");
+      if (!modal) return;
+
+      var STORAGE_KEY = "datatirze_pesquisa_modal_dismissed";
+      var dismissed = false;
+      try {
+        dismissed = localStorage.getItem(STORAGE_KEY) === "1";
+      } catch (e) {}
+
+      function openModal() {
+        modal.hidden = false;
+        document.body.classList.add("pesquisa-modal-open");
+      }
+
+      function closeModal(persist) {
+        modal.hidden = true;
+        document.body.classList.remove("pesquisa-modal-open");
+        if (persist) {
+          try { localStorage.setItem(STORAGE_KEY, "1"); } catch (e) {}
+        }
+      }
+
+      modal.querySelectorAll("[data-close-pesquisa-modal]").forEach(function (el) {
+        el.addEventListener("click", function () { closeModal(true); });
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !modal.hidden) closeModal(true);
+      });
+
+      if (!dismissed) {
+        setTimeout(openModal, 800);
+      }
+    })();
+  </script>
 </body>
 </html>

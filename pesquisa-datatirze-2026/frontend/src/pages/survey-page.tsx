@@ -11,7 +11,7 @@ import {
   StepConteudo,
   StepConclusao,
 } from "@/components/survey-steps";
-import { createSession, fetchConfig, fetchSession, saveSession, completeSession } from "@/lib/api";
+import { createSession, fetchConfig, fetchSession, saveSession, completeSession, verifyEmail } from "@/lib/api";
 import { getStepLabel, getVisibleSteps, SESSION_KEY } from "@/lib/utils";
 import { validateStep } from "@/lib/validation";
 import { useSurveyStore } from "@/store/survey-store";
@@ -36,6 +36,7 @@ export function SurveyPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const visibleSteps = getVisibleSteps(respostas.utilizouTirzepatida);
   const stepIndex = visibleSteps.indexOf(currentStep);
@@ -99,6 +100,7 @@ export function SurveyPage() {
     const next = { ...respostas, ...partial };
     updateRespostas(partial);
     setErrors({});
+    setSubmitError(null);
     autoSave(currentStep, next);
   }
 
@@ -109,25 +111,43 @@ export function SurveyPage() {
       return;
     }
 
-    if (currentStep === 2 && respostas.utilizouTirzepatida === false) {
-      await autoSave(9, respostas, "completed");
-      await completeSession(sessionToken!, respostas);
-      setSession(sessionToken!, 9, respostas, "completed");
-      setStep(9);
-      return;
-    }
+    setSubmitError(null);
 
-    if (isLastStep && currentStep === 8) {
-      await completeSession(sessionToken!, respostas);
-      setSession(sessionToken!, 9, respostas, "completed");
-      setStep(9);
-      return;
-    }
+    try {
+      if (currentStep === 1 && sessionToken) {
+        await verifyEmail(respostas.email || "", sessionToken);
+      }
 
-    const nextStep = visibleSteps[stepIndex + 1];
-    setStep(nextStep);
-    await autoSave(nextStep, respostas);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      if (currentStep === 2 && respostas.utilizouTirzepatida === false) {
+        await saveSession(sessionToken!, {
+          currentStep: 9,
+          respostas,
+          status: "completed",
+        });
+        await completeSession(sessionToken!, respostas);
+        setSession(sessionToken!, 9, respostas, "completed");
+        setStep(9);
+        return;
+      }
+
+      if (isLastStep && currentStep === 8) {
+        await completeSession(sessionToken!, respostas);
+        setSession(sessionToken!, 9, respostas, "completed");
+        setStep(9);
+        return;
+      }
+
+      const nextStep = visibleSteps[stepIndex + 1];
+      setStep(nextStep);
+      await autoSave(nextStep, respostas);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao avançar";
+      if (message.toLowerCase().includes("e-mail")) {
+        setErrors({ email: message });
+      }
+      setSubmitError(message);
+    }
   }
 
   function handleBack() {
@@ -219,6 +239,12 @@ export function SurveyPage() {
 
         <div className="survey-card">{renderStep()}</div>
 
+        {submitError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {submitError}
+          </div>
+        )}
+
         {showNav && currentStep !== 9 && !isCompleted && (
           <div className="mt-6 flex items-center justify-between gap-4">
             <button
@@ -246,7 +272,7 @@ export function SurveyPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-400">
-        Pesquisa anônima · DataTirze · 2026
+        Uma resposta por e-mail · DataTirze · 2026
       </footer>
     </div>
   );

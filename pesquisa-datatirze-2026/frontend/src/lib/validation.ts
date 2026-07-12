@@ -4,6 +4,12 @@ export function validateStep(step: number, respostas: PesquisaRespostas): Record
   const errors: Record<string, string> = {};
 
   if (step === 1) {
+    const email = respostas.email?.trim() || "";
+    if (!email) {
+      errors.email = "Informe seu e-mail";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Informe um e-mail válido";
+    }
     if (!respostas.idade) errors.idade = "Selecione sua faixa etária";
     if (!respostas.genero) errors.genero = "Selecione seu gênero";
     if (!respostas.estado) errors.estado = "Selecione seu estado";

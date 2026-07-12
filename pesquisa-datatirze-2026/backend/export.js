@@ -4,6 +4,7 @@ const CSV_COLUMNS = [
   { key: "id", label: "ID" },
   { key: "session_token", label: "Sessão" },
   { key: "created_at", label: "Data" },
+  { key: "email", label: "E-mail" },
   { key: "idade", label: "Idade" },
   { key: "genero", label: "Gênero" },
   { key: "estado", label: "Estado" },
