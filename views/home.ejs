@@ -2,12 +2,14 @@
 <!-- Manutenção: rota /manutencao. Landing principal: views/home-landing.ejs (/) -->
 <html lang="pt-BR">
 <head>
+  <%- include("partials/gtm-head") %>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataTirze — Manutenção</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="home-body maintenance-body">
+  <%- include("partials/gtm-body") %>
   <div class="container">
     <%- include("partials/header-maintenance") %>
   </div>
