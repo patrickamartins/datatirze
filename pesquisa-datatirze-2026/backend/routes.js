@@ -137,11 +137,13 @@ function createPesquisaRouter(pool, bcrypt) {
   }
 
   async function upsertResposta(sessionToken, sessionId, respostas, concluida = false) {
-    const row = mapRespostasToRow(sessionToken, sessionId, respostas, concluida);
     const existing = await pool.query(
-      "SELECT id FROM pesquisa_respostas WHERE session_token = $1",
+      "SELECT id, concluida FROM pesquisa_respostas WHERE session_token = $1",
       [sessionToken]
     );
+
+    const keepCompleted = existing.rows[0]?.concluida === true;
+    const row = mapRespostasToRow(sessionToken, sessionId, respostas, keepCompleted || concluida);
 
     if (existing.rows.length > 0) {
       const fields = Object.keys(row).filter((k) => k !== "session_token" && k !== "session_id");
@@ -406,9 +408,10 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
-      const [emAndamento, concluidas] = await Promise.all([
+      const [emAndamento, concluidas, comDados] = await Promise.all([
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'in_progress'`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
+        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL`),
       ]);
 
       const dashboard = buildDashboardData(rows);
@@ -416,6 +419,7 @@ function createPesquisaRouter(pool, bcrypt) {
         respostasConcluidas: concluidas.rows[0].total,
         sessoesEmAndamento: emAndamento.rows[0].total,
         filtradas: rows.length,
+        respostasComEmail: comDados.rows[0].total,
       };
 
       res.json(dashboard);

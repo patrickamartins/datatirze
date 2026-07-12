@@ -8,6 +8,7 @@ const path = require("path");
 const { initPesquisaDb } = require("./pesquisa-datatirze-2026/backend/db");
 const { createPesquisaRouter } = require("./pesquisa-datatirze-2026/backend/routes");
 const { ensurePesquisaAdminUser } = require("./pesquisa-datatirze-2026/backend/admin-user");
+const { repairPesquisaRespostas } = require("./pesquisa-datatirze-2026/backend/repair");
 
 // --- NOVAS IMPORTAÇÕES DE AUTENTICAÇÃO ---
 const session = require("express-session");
@@ -371,6 +372,7 @@ async function initDb() {
 
   await initPesquisaDb(pool);
   await ensurePesquisaAdminUser(pool);
+  await repairPesquisaRespostas(pool);
 }
 
 // --- FUNÇÕES AUXILIARES ---

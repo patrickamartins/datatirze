@@ -8,8 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export const SESSION_KEY = "pesquisa_datatirze_session";
 
 export function getVisibleSteps(utilizou?: boolean): number[] {
+  // Etapa 9 é só a tela de agradecimento — não entra na navegação
   if (utilizou === false) return [1, 2];
-  if (utilizou === true) return [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  if (utilizou === true) return [1, 2, 3, 4, 5, 6, 7, 8];
   return [1, 2];
 }
 

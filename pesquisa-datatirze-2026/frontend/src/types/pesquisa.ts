@@ -77,6 +77,7 @@ export interface DashboardData {
     respostasConcluidas: number;
     sessoesEmAndamento: number;
     filtradas: number;
+    respostasComEmail?: number;
   };
   demografia: {
     idade: ChartItem[];

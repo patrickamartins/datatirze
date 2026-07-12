@@ -40,7 +40,6 @@ export function SurveyPage() {
 
   const visibleSteps = getVisibleSteps(respostas.utilizouTirzepatida);
   const stepIndex = visibleSteps.indexOf(currentStep);
-  const isLastStep = stepIndex === visibleSteps.length - 1;
   const isCompleted = status === "completed";
 
   const init = useCallback(async () => {
@@ -120,19 +119,16 @@ export function SurveyPage() {
         await verifyEmail(respostas.email || "", sessionToken);
       }
 
+      // Quem não usa: encerra na etapa 2
       if (currentStep === 2 && respostas.utilizouTirzepatida === false) {
-        await saveSession(sessionToken!, {
-          currentStep: 9,
-          respostas,
-          status: "completed",
-        });
         await completeSession(sessionToken!, respostas);
         setSession(sessionToken!, 9, respostas, "completed");
         setStep(9);
         return;
       }
 
-      if (isLastStep && currentStep === 8) {
+      // Quem usa: conclui de fato na etapa 8 (antes só avançava para 9 sem marcar no banco)
+      if (currentStep === 8) {
         await completeSession(sessionToken!, respostas);
         setSession(sessionToken!, 9, respostas, "completed");
         setStep(9);
@@ -140,6 +136,7 @@ export function SurveyPage() {
       }
 
       const nextStep = visibleSteps[stepIndex + 1];
+      if (!nextStep) return;
       setStep(nextStep);
       await autoSave(nextStep, respostas);
       window.scrollTo({ top: 0, behavior: "smooth" });

@@ -148,15 +148,19 @@ export function AdminPage() {
             value={data.resumo?.filtradas ?? data.total}
           />
           <StatCard
+            label="Com e-mail no banco"
+            value={data.resumo?.respostasComEmail ?? data.total}
+          />
+          <StatCard
             label="Sessões em andamento"
             value={data.resumo?.sessoesEmAndamento ?? 0}
           />
-          <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Já utilizaram tirzepatida" value={data.utilizadores} />
           <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal} />
+          <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
