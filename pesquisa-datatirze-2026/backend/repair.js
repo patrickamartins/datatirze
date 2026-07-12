@@ -1,7 +1,11 @@
 function looksComplete(respostas = {}) {
   if (!respostas.email) return false;
 
-  if (respostas.utilizouTirzepatida === false) {
+  const utilizou = respostas.utilizouTirzepatida;
+  const utilizouBool =
+    utilizou === true || utilizou === "true" ? true : utilizou === false || utilizou === "false" ? false : null;
+
+  if (utilizouBool === false) {
     return Boolean(
       respostas.pretendeUtilizar &&
         respostas.motivoNaoUtilizar &&
@@ -12,14 +16,11 @@ function looksComplete(respostas = {}) {
     );
   }
 
-  if (respostas.utilizouTirzepatida === true) {
+  if (utilizouBool === true) {
     return Boolean(
       respostas.idade &&
         respostas.marcaAtual &&
-        respostas.ondeCompra &&
-        respostas.fontesInformacao &&
-        respostas.tipoConteudo &&
-        respostas.faltaMercado
+        (respostas.ondeCompra || respostas.faltaMercado || respostas.fontesInformacao)
     );
   }
 
@@ -51,7 +52,7 @@ async function repairPesquisaRespostas(pool) {
       const respostas = sessao.respostas || {};
       const shouldComplete =
         sessao.status === "completed" ||
-        sessao.current_step >= 9 ||
+        sessao.current_step >= 8 ||
         looksComplete(respostas);
 
       if (!shouldComplete) continue;

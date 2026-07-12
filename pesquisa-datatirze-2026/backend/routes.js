@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { MARCAS, DOSES, ESTADOS_BR, OPCOES, TOTAL_STEPS } = require("./constants");
 const { buildDashboardData } = require("./analytics");
 const { rowsToCsv, rowsToExcelBuffer } = require("./export");
+const { repairPesquisaRespostas } = require("./repair");
 
 function normalizeEmail(email) {
   if (!email || typeof email !== "string") return null;
@@ -397,6 +398,23 @@ function createPesquisaRouter(pool, bcrypt) {
 
   router.get("/admin/dashboard", requirePesquisaAdmin, async (req, res) => {
     try {
+      res.set({
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      });
+
+      // Sempre sincroniza/repara antes de devolver números atualizados
+      await repairPesquisaRespostas(pool);
+
+      // Sessões paradas há mais de 3h sem concluir = abandonadas (não inflar "em andamento")
+      await pool.query(`
+        UPDATE pesquisa_sessoes
+        SET status = 'abandoned', updated_at = NOW()
+        WHERE status = 'in_progress'
+          AND updated_at < NOW() - INTERVAL '3 hours'
+      `);
+
       const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
       const result = await pool.query(
         `SELECT * FROM pesquisa_respostas ${where} ORDER BY created_at DESC`,
@@ -408,10 +426,16 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
-      const [emAndamento, concluidas, comDados] = await Promise.all([
-        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'in_progress'`),
+      const [emAndamento, concluidas, comDados, abandonadas] = await Promise.all([
+        pool.query(`
+          SELECT COUNT(*)::int AS total
+          FROM pesquisa_sessoes
+          WHERE status = 'in_progress'
+            AND updated_at >= NOW() - INTERVAL '3 hours'
+        `),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL`),
+        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'abandoned'`),
       ]);
 
       const dashboard = buildDashboardData(rows);
@@ -420,6 +444,8 @@ function createPesquisaRouter(pool, bcrypt) {
         sessoesEmAndamento: emAndamento.rows[0].total,
         filtradas: rows.length,
         respostasComEmail: comDados.rows[0].total,
+        sessoesAbandonadas: abandonadas.rows[0].total,
+        atualizadoEm: new Date().toISOString(),
       };
 
       res.json(dashboard);

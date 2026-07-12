@@ -658,8 +658,17 @@ const pesquisaRouter = createPesquisaRouter(pool, bcrypt);
 app.use("/api/pesquisa", pesquisaRouter);
 
 const pesquisaDistPath = path.join(__dirname, "pesquisa-datatirze-2026", "dist");
-app.use("/pesquisa", express.static(pesquisaDistPath));
+app.use("/pesquisa", express.static(pesquisaDistPath, {
+  etag: false,
+  lastModified: false,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith("index.html")) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    }
+  },
+}));
 app.get(/^\/pesquisa(\/.*)?$/, (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.sendFile(path.join(pesquisaDistPath, "index.html"));
 });
 

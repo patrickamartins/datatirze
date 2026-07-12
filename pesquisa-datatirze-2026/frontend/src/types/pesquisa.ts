@@ -78,6 +78,8 @@ export interface DashboardData {
     sessoesEmAndamento: number;
     filtradas: number;
     respostasComEmail?: number;
+    sessoesAbandonadas?: number;
+    atualizadoEm?: string;
   };
   demografia: {
     idade: ChartItem[];

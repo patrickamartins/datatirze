@@ -11,7 +11,9 @@ export function AdminPage() {
   const [adminName, setAdminName] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [filters, setFilters] = useState({
     estado: "",
     marca: "",
@@ -37,7 +39,7 @@ export function AdminPage() {
   }, [navigate]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setRefreshing(true);
     setError(null);
     try {
       const params: Record<string, string> = {};
@@ -47,6 +49,9 @@ export function AdminPage() {
       if (filters.dataFim) params.dataFim = filters.dataFim;
       const result = await fetchDashboard(params);
       setData(result);
+      setLastUpdated(
+        result.resumo?.atualizadoEm ? new Date(result.resumo.atualizadoEm) : new Date()
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao carregar dados";
       if (message.includes("Não autenticado") || message.includes("restrito")) {
@@ -56,14 +61,30 @@ export function AdminPage() {
       setError(message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [filters, navigate]);
 
   useEffect(() => {
     if (!authChecked) return;
     load();
-    const interval = setInterval(load, 30000);
+    const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
+  }, [authChecked, load]);
+
+  useEffect(() => {
+    function onFocus() {
+      if (authChecked) load();
+    }
+    function onVisibility() {
+      if (document.visibilityState === "visible" && authChecked) load();
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [authChecked, load]);
 
   function handleExport(format: "csv" | "excel") {
@@ -115,11 +136,22 @@ export function AdminPage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Admin · DataTirze 2026</p>
             <h1 className="text-xl font-bold text-brand-900">Painel da Pesquisa Nacional</h1>
             <p className="text-xs text-slate-500">Olá, {adminName}</p>
+            {lastUpdated && (
+              <p className="text-xs text-slate-400">
+                Atualizado às {lastUpdated.toLocaleTimeString("pt-BR")}
+                {refreshing ? " · atualizando..." : ""}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={load} className="btn-secondary flex items-center gap-2 text-xs">
-              <RefreshCw className="h-4 w-4" />
-              Atualizar
+            <button
+              type="button"
+              onClick={() => load()}
+              disabled={refreshing}
+              className="btn-secondary flex items-center gap-2 text-xs disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Atualizando..." : "Atualizar"}
             </button>
             <button type="button" onClick={() => handleExport("csv")} className="btn-secondary flex items-center gap-2 text-xs">
               <Download className="h-4 w-4" />
@@ -154,12 +186,21 @@ export function AdminPage() {
           <StatCard
             label="Sessões em andamento"
             value={data.resumo?.sessoesEmAndamento ?? 0}
+            sub="Ativas nas últimas 3h"
           />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Já utilizaram tirzepatida" value={data.utilizadores} />
           <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal} />
+          <StatCard
+            label="Sessões abandonadas"
+            value={data.resumo?.sessoesAbandonadas ?? 0}
+            sub="Paradas há mais de 3h"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
         </div>
 

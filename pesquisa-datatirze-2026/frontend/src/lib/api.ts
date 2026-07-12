@@ -4,8 +4,14 @@ const API_BASE = "/api/pesquisa";
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      ...options?.headers,
+    },
     credentials: "include",
+    cache: "no-store",
     ...options,
   });
 
@@ -60,7 +66,10 @@ export function verifyEmail(
 }
 
 export function fetchDashboard(params: Record<string, string>): Promise<DashboardData> {
-  const query = new URLSearchParams(params).toString();
+  const query = new URLSearchParams({
+    ...params,
+    _t: String(Date.now()),
+  }).toString();
   return request<DashboardData>(`${API_BASE}/admin/dashboard?${query}`);
 }
 
