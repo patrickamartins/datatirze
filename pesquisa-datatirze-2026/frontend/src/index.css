@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .survey-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8;
+  }
+
+  .option-btn {
+    @apply w-full rounded-xl border border-slate-200 px-4 py-3 text-left text-sm transition hover:border-brand-500 hover:bg-brand-50;
+  }
+
+  .option-btn-selected {
+    @apply border-brand-600 bg-brand-50 font-medium text-brand-700 ring-2 ring-brand-500/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .field-label {
+    @apply mb-2 block text-sm font-medium text-slate-700;
+  }
+
+  .field-error {
+    @apply mt-1 text-xs text-red-600;
+  }
+}

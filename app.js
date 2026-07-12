@@ -4,6 +4,10 @@ const multer = require("multer");
 const { Pool } = require("pg");
 const path = require("path");
 
+// Pesquisa Nacional 2026
+const { initPesquisaDb } = require("./pesquisa-datatirze-2026/backend/db");
+const { createPesquisaRouter } = require("./pesquisa-datatirze-2026/backend/routes");
+
 // --- NOVAS IMPORTAÇÕES DE AUTENTICAÇÃO ---
 const session = require("express-session");
 const passport = require("passport");
@@ -363,6 +367,8 @@ async function initDb() {
   await ensureColumnExists("aceite_privacidade", "BOOLEAN DEFAULT FALSE");
   await ensureColumnExists("aceite_termos_em", "TIMESTAMP");
   await ensureColumnExists("aceite_privacidade_em", "TIMESTAMP");
+
+  await initPesquisaDb(pool);
 }
 
 // --- FUNÇÕES AUXILIARES ---
@@ -633,6 +639,16 @@ app.get("/api/dashboard", requireAuth, async (req, res) => {
     console.error("Erro na API do dashboard:", err);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
+});
+
+// --- PESQUISA NACIONAL 2026 ---
+const pesquisaRouter = createPesquisaRouter(pool, requireAuth);
+app.use("/api/pesquisa", pesquisaRouter);
+
+const pesquisaDistPath = path.join(__dirname, "pesquisa-datatirze-2026", "dist");
+app.use("/pesquisa", express.static(pesquisaDistPath));
+app.get(/^\/pesquisa(\/.*)?$/, (_req, res) => {
+  res.sendFile(path.join(pesquisaDistPath, "index.html"));
 });
 
 // --- INICIAR SERVIDOR ---

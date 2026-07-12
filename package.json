@@ -4,7 +4,10 @@
   "description": "Sistema Datatirze com formulario e dashboard",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "pesquisa:install": "cd pesquisa-datatirze-2026/frontend && npm install",
+    "pesquisa:build": "cd pesquisa-datatirze-2026/frontend && npm run build",
+    "pesquisa:dev": "cd pesquisa-datatirze-2026/frontend && npm run dev"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -16,6 +19,7 @@
     "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "xlsx": "^0.18.5"
   }
 }

@@ -2,3 +2,5 @@ node_modules
 .env
 database.sqlite
 .DS_Store
+pesquisa-datatirze-2026/frontend/node_modules
+*.tsbuildinfo
