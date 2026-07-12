@@ -795,7 +795,7 @@ body.pesquisa-modal-open {
   max-width: 480px;
   background: #fff;
   border-radius: 16px;
-  padding: 32px 28px 28px;
+  padding: 44px 28px 28px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
   text-align: center;
 }
@@ -803,27 +803,21 @@ body.pesquisa-modal-open {
 .pesquisa-modal-close {
   position: absolute;
   top: 12px;
-  right: 14px;
+  right: 12px;
+  left: auto;
+  margin: 0;
   border: none;
   background: transparent;
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   line-height: 1;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px 10px;
+  z-index: 2;
 }
 
 .pesquisa-modal-close:hover {
-  color: #334155;
-}
-
-.pesquisa-modal-eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #3498db;
+  color: #1a252f;
 }
 
 .pesquisa-modal-card h2 {
@@ -842,23 +836,12 @@ body.pesquisa-modal-open {
 
 .pesquisa-modal-actions {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: center;
 }
 
 .pesquisa-modal-actions .btn {
   width: 100%;
+  max-width: 280px;
   text-decoration: none;
   box-sizing: border-box;
-}
-
-@media (min-width: 480px) {
-  .pesquisa-modal-actions {
-    flex-direction: row;
-    justify-content: center;
-  }
-
-  .pesquisa-modal-actions .btn {
-    width: auto;
-  }
 }

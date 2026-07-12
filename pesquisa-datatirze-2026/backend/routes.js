@@ -51,7 +51,7 @@ function createPesquisaRouter(pool, requireAuth) {
       preco_justo_nao_usuario: r.precoJustoNaoUsuario || null,
       tempo_uso: r.tempoUso || null,
       marca_atual: r.marcaAtual || null,
-      marcas_utilizadas: r.marcasUtilizadas || null,
+      marcas_utilizadas: Array.isArray(r.marcasUtilizadas) ? r.marcasUtilizadas : null,
       melhor_marca: r.melhorMarca || null,
       melhor_custo_beneficio: r.melhorCustoBeneficio || null,
       melhores_resultados: r.melhoresResultados || null,
@@ -60,29 +60,37 @@ function createPesquisaRouter(pool, requireAuth) {
       como_conheceu: r.comoConheceu || null,
       gasto_mensal: r.gastoMensal || null,
       preco_justo: r.precoJusto || null,
-      fatores_compra: r.fatoresCompra ? JSON.stringify(r.fatoresCompra) : null,
-      peso_inicial: r.pesoInicial ? Number(r.pesoInicial) : null,
-      peso_atual: r.pesoAtual ? Number(r.pesoAtual) : null,
-      meta_peso: r.metaPeso ? Number(r.metaPeso) : null,
-      satisfacao: r.satisfacao !== undefined && r.satisfacao !== null ? Number(r.satisfacao) : null,
+      fatores_compra: Array.isArray(r.fatoresCompra) ? r.fatoresCompra : null,
+      peso_inicial: r.pesoInicial !== undefined && r.pesoInicial !== null && r.pesoInicial !== ""
+        ? Number(r.pesoInicial)
+        : null,
+      peso_atual: r.pesoAtual !== undefined && r.pesoAtual !== null && r.pesoAtual !== ""
+        ? Number(r.pesoAtual)
+        : null,
+      meta_peso: r.metaPeso !== undefined && r.metaPeso !== null && r.metaPeso !== ""
+        ? Number(r.metaPeso)
+        : null,
+      satisfacao: r.satisfacao !== undefined && r.satisfacao !== null && r.satisfacao !== ""
+        ? Number(r.satisfacao)
+        : null,
       expectativa_atingida: r.expectativaAtingida || null,
       acompanhamento_medico: r.acompanhamentoMedico === true ? true : r.acompanhamentoMedico === false ? false : null,
       acompanhamento_nutricional:
         r.acompanhamentoNutricional === true ? true : r.acompanhamentoNutricional === false ? false : null,
       atividade_fisica: r.atividadeFisica || null,
-      suplementacao: r.suplementacao || null,
-      efeitos_colaterais: r.efeitosColaterais || null,
+      suplementacao: Array.isArray(r.suplementacao) ? r.suplementacao : null,
+      efeitos_colaterais: Array.isArray(r.efeitosColaterais) ? r.efeitosColaterais : null,
       efeito_outro: r.efeitoOutro || null,
       efeito_mais_incomodo: r.efeitoMaisIncomodo || null,
       interrompeu_uso: r.interrompeuUso === true ? true : r.interrompeuUso === false ? false : null,
       efeito_interrupcao: r.efeitoInterrupcao || null,
-      fontes_informacao: r.fontesInformacao || null,
+      fontes_informacao: Array.isArray(r.fontesInformacao) ? r.fontesInformacao : null,
       acompanha_influenciadores:
         r.acompanhaInfluenciadores === true ? true : r.acompanhaInfluenciadores === false ? false : null,
       influenciadores: r.influenciadores || null,
       tipo_conteudo: r.tipoConteudo || null,
       falta_mercado: r.faltaMercado || null,
-      respostas_completas: JSON.stringify(r),
+      respostas_completas: r || {},
     };
   }
 

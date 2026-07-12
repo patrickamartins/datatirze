@@ -44,14 +44,18 @@ export function validateStep(step: number, respostas: PesquisaRespostas): Record
     if (!respostas.comoConheceu) errors.comoConheceu = "Selecione como conheceu";
     if (!respostas.gastoMensal) errors.gastoMensal = "Selecione o gasto mensal";
     if (!respostas.precoJusto) errors.precoJusto = "Selecione o preço justo";
-    if (!respostas.fatoresCompra?.length) errors.fatoresCompra = "Ordene os fatores de compra";
+    if (!respostas.fatoresCompra?.length) {
+      errors.fatoresCompra = "Ordene os fatores de compra (todos são obrigatórios)";
+    }
   }
 
   if (step === 5 && respostas.utilizouTirzepatida === true) {
     if (!respostas.pesoInicial || respostas.pesoInicial <= 0) errors.pesoInicial = "Informe o peso inicial";
     if (!respostas.pesoAtual || respostas.pesoAtual <= 0) errors.pesoAtual = "Informe o peso atual";
     if (!respostas.metaPeso || respostas.metaPeso <= 0) errors.metaPeso = "Informe a meta de peso";
-    if (respostas.satisfacao === undefined) errors.satisfacao = "Informe sua satisfação";
+    if (respostas.satisfacao === undefined || respostas.satisfacao === null) {
+      errors.satisfacao = "Informe sua satisfação";
+    }
     if (!respostas.expectativaAtingida) errors.expectativaAtingida = "Selecione uma opção";
   }
 

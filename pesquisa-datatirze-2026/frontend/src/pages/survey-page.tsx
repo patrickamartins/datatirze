@@ -87,8 +87,10 @@ export function SurveyPage() {
           status: stepStatus,
         });
         setLastSaved(new Date());
+        setSubmitError(null);
       } catch (err) {
         console.error("Erro ao salvar:", err);
+        setSubmitError(err instanceof Error ? err.message : "Erro ao salvar no banco de dados");
       } finally {
         setSaving(false);
       }

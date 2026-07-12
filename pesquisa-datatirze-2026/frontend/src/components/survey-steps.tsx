@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PesquisaConfig, PesquisaRespostas } from "@/types/pesquisa";
 import {
   CheckboxOption,
@@ -17,13 +17,18 @@ interface StepProps {
   errors: Record<string, string>;
 }
 
+function RequiredHint() {
+  return <p className="mb-6 text-xs font-medium text-slate-500">Todas as perguntas desta etapa são obrigatórias.</p>;
+}
+
 export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Seu perfil</h2>
-      <p className="mb-6 text-sm text-slate-500">
-        Leva cerca de 1 minuto. O e-mail garante uma resposta por pessoa e não será exibido publicamente.
+      <p className="mb-2 text-sm text-slate-500">
+        O e-mail garante uma resposta por pessoa e não será exibido publicamente.
       </p>
+      <RequiredHint />
 
       <TextInput
         label="E-mail *"
@@ -34,7 +39,7 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
         placeholder="seuemail@exemplo.com"
       />
 
-      <OptionGroup label="Qual sua idade?" error={errors.idade}>
+      <OptionGroup label="Qual sua idade? *" error={errors.idade}>
         {config.opcoes.idade.map((opt) => (
           <OptionButton
             key={opt}
@@ -45,7 +50,7 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Gênero" error={errors.genero}>
+      <OptionGroup label="Gênero *" error={errors.genero}>
         {config.opcoes.genero.map((opt) => (
           <OptionButton
             key={opt}
@@ -57,7 +62,7 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
       </OptionGroup>
 
       <SelectInput
-        label="Estado"
+        label="Estado *"
         value={respostas.estado || ""}
         onChange={(v) => onChange({ estado: v })}
         options={config.estados}
@@ -66,14 +71,14 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
       />
 
       <TextInput
-        label="Cidade"
+        label="Cidade *"
         value={respostas.cidade || ""}
         onChange={(v) => onChange({ cidade: v })}
         error={errors.cidade}
         placeholder="Sua cidade"
       />
 
-      <OptionGroup label="Escolaridade" error={errors.escolaridade}>
+      <OptionGroup label="Escolaridade *" error={errors.escolaridade}>
         {config.opcoes.escolaridade.map((opt) => (
           <OptionButton
             key={opt}
@@ -84,7 +89,7 @@ export function StepPerfil({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Faixa de renda mensal familiar" error={errors.faixaRenda}>
+      <OptionGroup label="Faixa de renda mensal familiar *" error={errors.faixaRenda}>
         {config.opcoes.faixaRenda.map((opt) => (
           <OptionButton
             key={opt}
@@ -104,9 +109,10 @@ export function StepExperiencia({ config, respostas, onChange, errors }: StepPro
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Experiência com Tirzepatida</h2>
-      <p className="mb-6 text-sm text-slate-500">Esta pergunta define o restante da sua jornada na pesquisa.</p>
+      <p className="mb-2 text-sm text-slate-500">Esta pergunta define o restante da sua jornada na pesquisa.</p>
+      <RequiredHint />
 
-      <OptionGroup label="Você já utilizou tirzepatida?" error={errors.utilizouTirzepatida}>
+      <OptionGroup label="Você já utilizou tirzepatida? *" error={errors.utilizouTirzepatida}>
         <OptionButton
           label="Sim"
           selected={respostas.utilizouTirzepatida === true}
@@ -121,7 +127,7 @@ export function StepExperiencia({ config, respostas, onChange, errors }: StepPro
 
       {naoUtilizou && (
         <>
-          <OptionGroup label="Pretende utilizar?" error={errors.pretendeUtilizar}>
+          <OptionGroup label="Pretende utilizar? *" error={errors.pretendeUtilizar}>
             {config.opcoes.pretendeUtilizar.map((opt) => (
               <OptionButton
                 key={opt}
@@ -132,7 +138,7 @@ export function StepExperiencia({ config, respostas, onChange, errors }: StepPro
             ))}
           </OptionGroup>
 
-          <OptionGroup label="Principal motivo para não utilizar" error={errors.motivoNaoUtilizar}>
+          <OptionGroup label="Principal motivo para não utilizar *" error={errors.motivoNaoUtilizar}>
             {config.opcoes.motivoNaoUtilizar.map((opt) => (
               <OptionButton
                 key={opt}
@@ -143,7 +149,7 @@ export function StepExperiencia({ config, respostas, onChange, errors }: StepPro
             ))}
           </OptionGroup>
 
-          <OptionGroup label="Quanto considera justo pagar por caixa?" error={errors.precoJustoNaoUsuario}>
+          <OptionGroup label="Quanto considera justo pagar por caixa? *" error={errors.precoJustoNaoUsuario}>
             {config.opcoes.precoJusto.map((opt) => (
               <OptionButton
                 key={opt}
@@ -196,9 +202,10 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Histórico de Uso</h2>
-      <p className="mb-6 text-sm text-slate-500">Suas experiências com as marcas do mercado brasileiro.</p>
+      <p className="mb-2 text-sm text-slate-500">Suas experiências com as marcas do mercado brasileiro.</p>
+      <RequiredHint />
 
-      <OptionGroup label="Há quanto tempo utiliza?" error={errors.tempoUso}>
+      <OptionGroup label="Há quanto tempo utiliza? *" error={errors.tempoUso}>
         {config.opcoes.tempoUso.map((opt) => (
           <OptionButton
             key={opt}
@@ -210,14 +217,14 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
       </OptionGroup>
 
       <MarcaSelect
-        label="Atualmente utiliza qual marca?"
+        label="Atualmente utiliza qual marca? *"
         value={respostas.marcaAtual}
         onChange={(v) => onChange({ marcaAtual: v })}
         marcas={config.marcas}
         error={errors.marcaAtual}
       />
 
-      <OptionGroup label="Já utilizou quais marcas?" error={errors.marcasUtilizadas}>
+      <OptionGroup label="Já utilizou quais marcas? *" error={errors.marcasUtilizadas}>
         {config.marcas.map((marca) => (
           <CheckboxOption
             key={marca.id}
@@ -229,7 +236,7 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
       </OptionGroup>
 
       <MarcaSelect
-        label="Qual marca considera melhor?"
+        label="Qual marca considera melhor? *"
         value={respostas.melhorMarca}
         onChange={(v) => onChange({ melhorMarca: v })}
         marcas={config.marcas}
@@ -237,7 +244,7 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
       />
 
       <MarcaSelect
-        label="Qual marca considera melhor custo-benefício?"
+        label="Qual marca considera melhor custo-benefício? *"
         value={respostas.melhorCustoBeneficio}
         onChange={(v) => onChange({ melhorCustoBeneficio: v })}
         marcas={config.marcas}
@@ -245,7 +252,7 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
       />
 
       <MarcaSelect
-        label="Qual marca gerou melhores resultados?"
+        label="Qual marca gerou melhores resultados? *"
         value={respostas.melhoresResultados}
         onChange={(v) => onChange({ melhoresResultados: v })}
         marcas={config.marcas}
@@ -253,7 +260,7 @@ export function StepHistorico({ config, respostas, onChange, errors }: StepProps
       />
 
       <MarcaSelect
-        label="Qual marca usou e apresentou menos resultado?"
+        label="Qual marca usou e apresentou menos resultado? *"
         value={respostas.menorResultado}
         onChange={(v) => onChange({ menorResultado: v })}
         marcas={config.marcas}
@@ -267,6 +274,14 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const fatores = respostas.fatoresCompra || [...config.opcoes.fatoresCompra];
 
+  useEffect(() => {
+    if (!respostas.fatoresCompra?.length) {
+      onChange({ fatoresCompra: [...config.opcoes.fatoresCompra] });
+    }
+    // Inicializa uma vez para garantir persistência obrigatória no banco
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function moveItem(from: number, to: number) {
     const items = [...fatores];
     const [removed] = items.splice(from, 1);
@@ -277,9 +292,10 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Comportamento de Compra</h2>
-      <p className="mb-6 text-sm text-slate-500">Como e onde você adquire o produto.</p>
+      <p className="mb-2 text-sm text-slate-500">Como e onde você adquire o produto.</p>
+      <RequiredHint />
 
-      <OptionGroup label="Onde costuma comprar?" error={errors.ondeCompra}>
+      <OptionGroup label="Onde costuma comprar? *" error={errors.ondeCompra}>
         {config.opcoes.ondeCompra.map((opt) => (
           <OptionButton
             key={opt}
@@ -290,7 +306,7 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Como conheceu seu fornecedor atual?" error={errors.comoConheceu}>
+      <OptionGroup label="Como conheceu seu fornecedor atual? *" error={errors.comoConheceu}>
         {config.opcoes.comoConheceu.map((opt) => (
           <OptionButton
             key={opt}
@@ -301,7 +317,7 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Quanto gasta por mês?" error={errors.gastoMensal}>
+      <OptionGroup label="Quanto gasta por mês? *" error={errors.gastoMensal}>
         {config.opcoes.gastoMensal.map((opt) => (
           <OptionButton
             key={opt}
@@ -312,7 +328,7 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Qual valor considera justo por caixa?" error={errors.precoJusto}>
+      <OptionGroup label="Qual valor considera justo por caixa? *" error={errors.precoJusto}>
         {config.opcoes.precoJusto.map((opt) => (
           <OptionButton
             key={opt}
@@ -324,7 +340,7 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
       </OptionGroup>
 
       <div className="mb-5">
-        <p className="field-label">O que mais influencia sua compra? (ordene por prioridade)</p>
+        <p className="field-label">O que mais influencia sua compra? * (ordene por prioridade)</p>
         <p className="mb-3 text-xs text-slate-500">Arraste para reordenar — o primeiro é o mais importante.</p>
         <div className="space-y-2">
           {fatores.map((fator, index) => (
@@ -371,13 +387,21 @@ export function StepCompra({ config, respostas, onChange, errors }: StepProps) {
 }
 
 export function StepResultados({ respostas, onChange, errors }: Omit<StepProps, "config">) {
+  useEffect(() => {
+    if (respostas.satisfacao === undefined || respostas.satisfacao === null) {
+      onChange({ satisfacao: 5 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Resultados</h2>
-      <p className="mb-6 text-sm text-slate-500">Seus resultados com o tratamento.</p>
+      <p className="mb-2 text-sm text-slate-500">Seus resultados com o tratamento.</p>
+      <RequiredHint />
 
       <TextInput
-        label="Qual era seu peso inicial? (kg)"
+        label="Qual era seu peso inicial? (kg) *"
         type="number"
         value={respostas.pesoInicial?.toString() || ""}
         onChange={(v) => onChange({ pesoInicial: v ? Number(v) : undefined })}
@@ -386,7 +410,7 @@ export function StepResultados({ respostas, onChange, errors }: Omit<StepProps, 
       />
 
       <TextInput
-        label="Peso atual? (kg)"
+        label="Peso atual? (kg) *"
         type="number"
         value={respostas.pesoAtual?.toString() || ""}
         onChange={(v) => onChange({ pesoAtual: v ? Number(v) : undefined })}
@@ -395,7 +419,7 @@ export function StepResultados({ respostas, onChange, errors }: Omit<StepProps, 
       />
 
       <TextInput
-        label="Meta de peso? (kg)"
+        label="Meta de peso? (kg) *"
         type="number"
         value={respostas.metaPeso?.toString() || ""}
         onChange={(v) => onChange({ metaPeso: v ? Number(v) : undefined })}
@@ -404,12 +428,13 @@ export function StepResultados({ respostas, onChange, errors }: Omit<StepProps, 
       />
 
       <SliderInput
-        label="Em uma escala de 0 a 10, qual sua satisfação?"
+        label="Em uma escala de 0 a 10, qual sua satisfação? *"
         value={respostas.satisfacao ?? 5}
         onChange={(v) => onChange({ satisfacao: v })}
       />
+      {errors.satisfacao && <p className="field-error -mt-3 mb-5">{errors.satisfacao}</p>}
 
-      <OptionGroup label="Sua expectativa foi atingida?" error={errors.expectativaAtingida}>
+      <OptionGroup label="Sua expectativa foi atingida? *" error={errors.expectativaAtingida}>
         {["Sim", "Parcialmente", "Não"].map((opt) => (
           <OptionButton
             key={opt}
@@ -440,9 +465,10 @@ export function StepSaude({ config, respostas, onChange, errors }: StepProps) {
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Saúde e Acompanhamento</h2>
-      <p className="mb-6 text-sm text-slate-500">Seu acompanhamento profissional e hábitos.</p>
+      <p className="mb-2 text-sm text-slate-500">Seu acompanhamento profissional e hábitos.</p>
+      <RequiredHint />
 
-      <OptionGroup label="Faz acompanhamento médico?" error={errors.acompanhamentoMedico}>
+      <OptionGroup label="Faz acompanhamento médico? *" error={errors.acompanhamentoMedico}>
         <OptionButton
           label="Sim"
           selected={respostas.acompanhamentoMedico === true}
@@ -455,7 +481,7 @@ export function StepSaude({ config, respostas, onChange, errors }: StepProps) {
         />
       </OptionGroup>
 
-      <OptionGroup label="Faz acompanhamento nutricional?" error={errors.acompanhamentoNutricional}>
+      <OptionGroup label="Faz acompanhamento nutricional? *" error={errors.acompanhamentoNutricional}>
         <OptionButton
           label="Sim"
           selected={respostas.acompanhamentoNutricional === true}
@@ -468,7 +494,7 @@ export function StepSaude({ config, respostas, onChange, errors }: StepProps) {
         />
       </OptionGroup>
 
-      <OptionGroup label="Pratica atividade física?" error={errors.atividadeFisica}>
+      <OptionGroup label="Pratica atividade física? *" error={errors.atividadeFisica}>
         {config.opcoes.atividadeFisica.map((opt) => (
           <OptionButton
             key={opt}
@@ -479,7 +505,7 @@ export function StepSaude({ config, respostas, onChange, errors }: StepProps) {
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Utiliza suplementação?" error={errors.suplementacao}>
+      <OptionGroup label="Utiliza suplementação? *" error={errors.suplementacao}>
         {config.opcoes.suplementacao.map((opt) => (
           <CheckboxOption
             key={opt}
@@ -512,9 +538,10 @@ export function StepEfeitos({ config, respostas, onChange, errors }: StepProps) 
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Efeitos Colaterais</h2>
-      <p className="mb-6 text-sm text-slate-500">Quais efeitos você sentiu durante o uso?</p>
+      <p className="mb-2 text-sm text-slate-500">Quais efeitos você sentiu durante o uso?</p>
+      <RequiredHint />
 
-      <OptionGroup label="Quais efeitos sentiu?" error={errors.efeitosColaterais}>
+      <OptionGroup label="Quais efeitos sentiu? *" error={errors.efeitosColaterais}>
         {config.opcoes.efeitosColaterais.map((opt) => (
           <CheckboxOption
             key={opt}
@@ -527,7 +554,7 @@ export function StepEfeitos({ config, respostas, onChange, errors }: StepProps) 
 
       {(respostas.efeitosColaterais || []).includes("Outro") && (
         <TextInput
-          label="Descreva o outro efeito"
+          label="Descreva o outro efeito *"
           value={respostas.efeitoOutro || ""}
           onChange={(v) => onChange({ efeitoOutro: v })}
           error={errors.efeitoOutro}
@@ -535,7 +562,7 @@ export function StepEfeitos({ config, respostas, onChange, errors }: StepProps) 
       )}
 
       {efeitosAtivos.length > 0 && (
-        <OptionGroup label="Qual foi o mais incômodo?" error={errors.efeitoMaisIncomodo}>
+        <OptionGroup label="Qual foi o mais incômodo? *" error={errors.efeitoMaisIncomodo}>
           {efeitosAtivos.map((opt) => (
             <OptionButton
               key={opt}
@@ -554,7 +581,7 @@ export function StepEfeitos({ config, respostas, onChange, errors }: StepProps) 
         </OptionGroup>
       )}
 
-      <OptionGroup label="Algum efeito fez você interromper o uso?" error={errors.interrompeuUso}>
+      <OptionGroup label="Algum efeito fez você interromper o uso? *" error={errors.interrompeuUso}>
         <OptionButton
           label="Sim"
           selected={respostas.interrompeuUso === true}
@@ -569,7 +596,7 @@ export function StepEfeitos({ config, respostas, onChange, errors }: StepProps) 
 
       {respostas.interrompeuUso === true && (
         <TextInput
-          label="Qual efeito causou a interrupção?"
+          label="Qual efeito causou a interrupção? *"
           value={respostas.efeitoInterrupcao || ""}
           onChange={(v) => onChange({ efeitoInterrupcao: v })}
           error={errors.efeitoInterrupcao}
@@ -589,9 +616,10 @@ export function StepConteudo({ config, respostas, onChange, errors }: StepProps)
   return (
     <div>
       <h2 className="mb-1 text-xl font-bold text-brand-900">Consumo de Conteúdo</h2>
-      <p className="mb-6 text-sm text-slate-500">Onde você busca informações sobre tirzepatida?</p>
+      <p className="mb-2 text-sm text-slate-500">Onde você busca informações sobre tirzepatida?</p>
+      <RequiredHint />
 
-      <OptionGroup label="Onde busca informações?" error={errors.fontesInformacao}>
+      <OptionGroup label="Onde busca informações? *" error={errors.fontesInformacao}>
         {config.opcoes.fontesInformacao.map((opt) => (
           <CheckboxOption
             key={opt}
@@ -602,7 +630,7 @@ export function StepConteudo({ config, respostas, onChange, errors }: StepProps)
         ))}
       </OptionGroup>
 
-      <OptionGroup label="Acompanha influenciadores?" error={errors.acompanhaInfluenciadores}>
+      <OptionGroup label="Acompanha influenciadores? *" error={errors.acompanhaInfluenciadores}>
         <OptionButton
           label="Sim"
           selected={respostas.acompanhaInfluenciadores === true}
@@ -617,7 +645,7 @@ export function StepConteudo({ config, respostas, onChange, errors }: StepProps)
 
       {respostas.acompanhaInfluenciadores === true && (
         <TextInput
-          label="Quais influenciadores você acompanha?"
+          label="Quais influenciadores você acompanha? *"
           value={respostas.influenciadores || ""}
           onChange={(v) => onChange({ influenciadores: v })}
           error={errors.influenciadores}
@@ -625,7 +653,7 @@ export function StepConteudo({ config, respostas, onChange, errors }: StepProps)
         />
       )}
 
-      <OptionGroup label="Que tipo de conteúdo prefere?" error={errors.tipoConteudo}>
+      <OptionGroup label="Que tipo de conteúdo prefere? *" error={errors.tipoConteudo}>
         {config.opcoes.tipoConteudo.map((opt) => (
           <OptionButton
             key={opt}
@@ -637,7 +665,7 @@ export function StepConteudo({ config, respostas, onChange, errors }: StepProps)
       </OptionGroup>
 
       <TextInput
-        label="O que falta hoje nesse mercado?"
+        label="O que falta hoje nesse mercado? *"
         value={respostas.faltaMercado || ""}
         onChange={(v) => onChange({ faltaMercado: v })}
         error={errors.faltaMercado}
