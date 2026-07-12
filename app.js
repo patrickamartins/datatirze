@@ -372,7 +372,11 @@ async function initDb() {
 
   await initPesquisaDb(pool);
   await ensurePesquisaAdminUser(pool);
-  await repairPesquisaRespostas(pool);
+  try {
+    await repairPesquisaRespostas(pool);
+  } catch (err) {
+    console.error("[pesquisa] Repair falhou (servidor segue normalmente):", err.message);
+  }
 }
 
 // --- FUNÇÕES AUXILIARES ---

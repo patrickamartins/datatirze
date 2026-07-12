@@ -102,7 +102,7 @@ function createPesquisaRouter(pool, bcrypt) {
       como_conheceu: r.comoConheceu || null,
       gasto_mensal: r.gastoMensal || null,
       preco_justo: r.precoJusto || null,
-      fatores_compra: Array.isArray(r.fatoresCompra) ? r.fatoresCompra : null,
+      fatores_compra: Array.isArray(r.fatoresCompra) ? JSON.stringify(r.fatoresCompra) : null,
       peso_inicial: r.pesoInicial !== undefined && r.pesoInicial !== null && r.pesoInicial !== ""
         ? Number(r.pesoInicial)
         : null,
@@ -132,7 +132,7 @@ function createPesquisaRouter(pool, bcrypt) {
       influenciadores: r.influenciadores || null,
       tipo_conteudo: r.tipoConteudo || null,
       falta_mercado: r.faltaMercado || null,
-      respostas_completas: r || {},
+      respostas_completas: JSON.stringify(r || {}),
     };
   }
 
