@@ -66,6 +66,7 @@ As tabelas são criadas automaticamente na inicialização:
 |-------|------------|
 | TG | Indufar |
 | Lipoless | Éticos |
+| Slimex | Éticos |
 | Tirzec | Quimfa |
 | Lipoland | Landerlan |
 | Tirzedral | Catedral |

@@ -1,6 +1,7 @@
 const MARCAS = [
   { id: "tg", label: "TG", fabricante: "Indufar" },
   { id: "lipoless", label: "Lipoless", fabricante: "Éticos" },
+  { id: "slimex", label: "Slimex", fabricante: "Éticos" },
   { id: "tirzec", label: "Tirzec", fabricante: "Quimfa" },
   { id: "lipoland", label: "Lipoland", fabricante: "Landerlan" },
   { id: "tirzedral", label: "Tirzedral", fabricante: "Catedral" },
