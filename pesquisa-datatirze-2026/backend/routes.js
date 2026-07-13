@@ -610,7 +610,7 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
-      const [emAndamento, concluidas, comDados, abandonadas] = await Promise.all([
+      const [emAndamento, concluidas, comDados, abandonadas, abandonadasDetalhe] = await Promise.all([
         pool.query(`
           SELECT COUNT(*)::int AS total
           FROM pesquisa_sessoes
@@ -620,7 +620,62 @@ function createPesquisaRouter(pool, bcrypt) {
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'abandoned'`),
+        pool.query(`
+          SELECT
+            ps.session_token,
+            ps.current_step,
+            ps.status,
+            ps.created_at,
+            ps.updated_at,
+            lower(COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', ''))) AS email,
+            COALESCE(pr.estado, NULLIF(ps.respostas->>'estado', '')) AS estado,
+            COALESCE(pr.cidade, NULLIF(ps.respostas->>'cidade', '')) AS cidade,
+            COALESCE(pr.idade, NULLIF(ps.respostas->>'idade', '')) AS idade,
+            COALESCE(pr.genero, NULLIF(ps.respostas->>'genero', '')) AS genero,
+            COALESCE(
+              pr.utilizou_tirzepatida,
+              CASE
+                WHEN ps.respostas->>'utilizouTirzepatida' = 'true' THEN TRUE
+                WHEN ps.respostas->>'utilizouTirzepatida' = 'false' THEN FALSE
+                ELSE NULL
+              END
+            ) AS utilizou_tirzepatida
+          FROM pesquisa_sessoes ps
+          LEFT JOIN pesquisa_respostas pr ON pr.session_token = ps.session_token
+          WHERE ps.status = 'abandoned'
+            AND COALESCE(pr.concluida, FALSE) = FALSE
+            AND COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')) IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM pesquisa_respostas pr2
+              WHERE pr2.concluida = TRUE
+                AND lower(pr2.email) = lower(COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')))
+            )
+          ORDER BY ps.updated_at DESC
+          LIMIT 500
+        `),
       ]);
+
+      // Um e-mail por linha (sessão mais recente)
+      const emailsVistos = new Set();
+      const sessoesAbandonadasLista = [];
+      for (const row of abandonadasDetalhe.rows) {
+        if (!row.email || emailsVistos.has(row.email)) continue;
+        emailsVistos.add(row.email);
+        sessoesAbandonadasLista.push({
+          sessionToken: row.session_token,
+          email: row.email,
+          currentStep: row.current_step,
+          status: row.status,
+          estado: row.estado || null,
+          cidade: row.cidade || null,
+          idade: row.idade || null,
+          genero: row.genero || null,
+          utilizouTirzepatida: row.utilizou_tirzepatida,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        });
+      }
 
       const dashboard = buildDashboardData(rows);
       dashboard.resumo = {
@@ -629,8 +684,10 @@ function createPesquisaRouter(pool, bcrypt) {
         filtradas: rows.length,
         respostasComEmail: comDados.rows[0].total,
         sessoesAbandonadas: abandonadas.rows[0].total,
+        sessoesAbandonadasComEmail: sessoesAbandonadasLista.length,
         atualizadoEm: new Date().toISOString(),
       };
+      dashboard.sessoesAbandonadas = sessoesAbandonadasLista;
 
       res.json(dashboard);
     } catch (err) {
@@ -670,6 +727,83 @@ function createPesquisaRouter(pool, bcrypt) {
     } catch (err) {
       console.error("Erro na exportação Excel:", err);
       res.status(500).json({ error: err.message || "Erro na exportação Excel" });
+    }
+  });
+
+  router.get("/admin/export/abandonadas.csv", requirePesquisaAdmin, async (req, res) => {
+    try {
+      await pool.query(`
+        UPDATE pesquisa_sessoes
+        SET status = 'abandoned', updated_at = NOW()
+        WHERE status = 'in_progress'
+          AND updated_at < NOW() - INTERVAL '3 hours'
+      `);
+
+      const result = await pool.query(`
+        SELECT
+          ps.current_step,
+          ps.created_at,
+          ps.updated_at,
+          lower(COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', ''))) AS email,
+          COALESCE(pr.estado, NULLIF(ps.respostas->>'estado', '')) AS estado,
+          COALESCE(pr.cidade, NULLIF(ps.respostas->>'cidade', '')) AS cidade,
+          COALESCE(pr.idade, NULLIF(ps.respostas->>'idade', '')) AS idade,
+          COALESCE(pr.genero, NULLIF(ps.respostas->>'genero', '')) AS genero,
+          COALESCE(
+            pr.utilizou_tirzepatida,
+            CASE
+              WHEN ps.respostas->>'utilizouTirzepatida' = 'true' THEN TRUE
+              WHEN ps.respostas->>'utilizouTirzepatida' = 'false' THEN FALSE
+              ELSE NULL
+            END
+          ) AS utilizou_tirzepatida
+        FROM pesquisa_sessoes ps
+        LEFT JOIN pesquisa_respostas pr ON pr.session_token = ps.session_token
+        WHERE ps.status = 'abandoned'
+          AND COALESCE(pr.concluida, FALSE) = FALSE
+          AND COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')) IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM pesquisa_respostas pr2
+            WHERE pr2.concluida = TRUE
+              AND lower(pr2.email) = lower(COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')))
+          )
+        ORDER BY ps.updated_at DESC
+      `);
+
+      const emailsVistos = new Set();
+      const lines = ["email;etapa;estado;cidade;idade;genero;utilizou_tirzepatida;criado_em;atualizado_em"];
+      for (const row of result.rows) {
+        if (!row.email || emailsVistos.has(row.email)) continue;
+        emailsVistos.add(row.email);
+        const utilizou =
+          row.utilizou_tirzepatida === true ? "sim" : row.utilizou_tirzepatida === false ? "nao" : "";
+        lines.push(
+          [
+            row.email,
+            row.current_step ?? "",
+            row.estado || "",
+            row.cidade || "",
+            row.idade || "",
+            row.genero || "",
+            utilizou,
+            row.created_at ? new Date(row.created_at).toISOString() : "",
+            row.updated_at ? new Date(row.updated_at).toISOString() : "",
+          ]
+            .map((v) => String(v).replace(/;/g, ","))
+            .join(";")
+        );
+      }
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="pesquisa-sessoes-abandonadas-mailing.csv"'
+      );
+      res.send("\uFEFF" + lines.join("\n"));
+    } catch (err) {
+      console.error("Erro na exportação de abandonadas:", err);
+      res.status(500).json({ error: "Erro ao exportar sessões abandonadas" });
     }
   });
 

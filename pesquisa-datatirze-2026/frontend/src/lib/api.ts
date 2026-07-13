@@ -105,6 +105,10 @@ export function getExportUrl(format: "csv" | "excel", params: Record<string, str
   return `${API_BASE}/admin/export/${format}?${query}`;
 }
 
+export function getAbandonedExportUrl(): string {
+  return `${API_BASE}/admin/export/abandonadas.csv?_t=${Date.now()}`;
+}
+
 export function adminLogin(email: string, senha: string): Promise<{ success: boolean; user: { id: number; nome: string; email: string } }> {
   return request(`${API_BASE}/admin/login`, {
     method: "POST",

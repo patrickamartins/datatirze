@@ -79,6 +79,7 @@ export interface DashboardData {
     filtradas: number;
     respostasComEmail?: number;
     sessoesAbandonadas?: number;
+    sessoesAbandonadasComEmail?: number;
     atualizadoEm?: string;
   };
   demografia: {
@@ -141,4 +142,17 @@ export interface DashboardData {
     estados: string[];
     marcas: Array<{ id: string; label: string }>;
   };
+  sessoesAbandonadas?: Array<{
+    sessionToken: string;
+    email: string;
+    currentStep: number;
+    status: string;
+    estado?: string | null;
+    cidade?: string | null;
+    idade?: string | null;
+    genero?: string | null;
+    utilizouTirzepatida?: boolean | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }

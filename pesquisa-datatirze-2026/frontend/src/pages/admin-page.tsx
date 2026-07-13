@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BarChartPanel, ChartCard, PieChartPanel, StatCard } from "@/components/charts";
-import { adminLogout, adminMe, fetchDashboard, getExportUrl } from "@/lib/api";
+import { adminLogout, adminMe, fetchDashboard, getAbandonedExportUrl, getExportUrl } from "@/lib/api";
+import { getStepLabel } from "@/lib/utils";
 import type { DashboardData } from "@/types/pesquisa";
-import { Download, RefreshCw, LogOut } from "lucide-react";
+import { Copy, Download, RefreshCw, LogOut } from "lucide-react";
 
 export function AdminPage() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function AdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     estado: "",
     marca: "",
@@ -94,6 +96,25 @@ export function AdminPage() {
     if (filters.dataInicio) params.dataInicio = filters.dataInicio;
     if (filters.dataFim) params.dataFim = filters.dataFim;
     window.open(getExportUrl(format, params), "_blank");
+  }
+
+  function handleExportAbandoned() {
+    window.open(getAbandonedExportUrl(), "_blank");
+  }
+
+  async function handleCopyAbandonedEmails() {
+    const emails = (data?.sessoesAbandonadas || []).map((s) => s.email).filter(Boolean);
+    if (!emails.length) {
+      setCopyFeedback("Nenhum e-mail disponível");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(emails.join("\n"));
+      setCopyFeedback(`${emails.length} e-mail(s) copiado(s)`);
+    } catch {
+      setCopyFeedback("Não foi possível copiar");
+    }
+    setTimeout(() => setCopyFeedback(null), 2500);
   }
 
   async function handleLogout() {
@@ -196,8 +217,70 @@ export function AdminPage() {
           <StatCard
             label="Sessões abandonadas"
             value={data.resumo?.sessoesAbandonadas ?? 0}
-            sub="Paradas há mais de 3h"
+            sub={`${data.resumo?.sessoesAbandonadasComEmail ?? data.sessoesAbandonadas?.length ?? 0} com e-mail p/ mailing`}
           />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-700">Sessões abandonadas — mailing</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                E-mails de quem iniciou e não concluiu (exclui quem já finalizou depois). Use para pedir o retorno.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleCopyAbandonedEmails}
+                className="btn-secondary flex items-center gap-2 text-xs"
+              >
+                <Copy className="h-4 w-4" />
+                Copiar e-mails
+              </button>
+              <button
+                type="button"
+                onClick={handleExportAbandoned}
+                className="btn-secondary flex items-center gap-2 text-xs"
+              >
+                <Download className="h-4 w-4" />
+                CSV mailing
+              </button>
+            </div>
+          </div>
+          {copyFeedback && <p className="mb-3 text-xs text-brand-700">{copyFeedback}</p>}
+          {(data.sessoesAbandonadas || []).length === 0 ? (
+            <p className="text-sm text-slate-500">Nenhuma sessão abandonada com e-mail no momento.</p>
+          ) : (
+            <div className="max-h-96 overflow-auto rounded-xl border border-slate-100">
+              <table className="min-w-full text-left text-sm">
+                <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">E-mail</th>
+                    <th className="px-3 py-2 font-medium">Etapa</th>
+                    <th className="px-3 py-2 font-medium">Estado</th>
+                    <th className="px-3 py-2 font-medium">Cidade</th>
+                    <th className="px-3 py-2 font-medium">Última atividade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.sessoesAbandonadas || []).map((sessao) => (
+                    <tr key={sessao.sessionToken} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-medium text-slate-800">{sessao.email}</td>
+                      <td className="px-3 py-2 text-slate-600">
+                        {sessao.currentStep} · {getStepLabel(sessao.currentStep)}
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">{sessao.estado || "—"}</td>
+                      <td className="px-3 py-2 text-slate-600">{sessao.cidade || "—"}</td>
+                      <td className="px-3 py-2 text-slate-500">
+                        {new Date(sessao.updatedAt).toLocaleString("pt-BR")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
