@@ -450,6 +450,7 @@ app.get("/reportar", (req, res) => {
 
 app.get("/termos", (req, res) => res.render("termos"));
 app.get("/privacidade", (req, res) => res.render("privacidade"));
+app.get("/calculadora", (req, res) => res.render("calculadora"));
 
 // --- ROTAS DE AUTENTICAÇÃO ---
 app.get("/login", (req, res) => res.render("login", { error: null }));

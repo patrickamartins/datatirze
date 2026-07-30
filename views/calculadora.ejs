@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <%- include("partials/gtm-head") %>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calcula Minha Dose — DataTirze</title>
+  <meta name="description" content="Calculadora informativa de reconstituição e dosagem de medicação liofilizada. DataTirze." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/calculadora.css" />
+</head>
+<body class="calc-page">
+  <%- include("partials/gtm-body") %>
+  <div class="container calc-container">
+    <%- include("partials/header") %>
+
+    <header class="calc-hero">
+      <p class="calc-eyebrow">DataTirze</p>
+      <h1>Calcula Minha Dose</h1>
+      <p class="calc-subtitle">Calculadora informativa de reconstituição e dosagem</p>
+    </header>
+
+    <div class="calc-layout">
+      <section class="calc-steps" aria-label="Configuração da dose">
+        <article class="calc-step" data-step="1">
+          <div class="calc-step-head">
+            <span class="calc-step-num">1</span>
+            <div>
+              <h2>Conteúdo do frasco</h2>
+              <p>Massa do medicamento liofilizado</p>
+            </div>
+          </div>
+          <div class="calc-options" id="mass-options" role="group" aria-label="Massa do frasco"></div>
+          <div class="calc-custom" id="mass-custom" hidden>
+            <label for="mass-custom-input">Massa personalizada (mg)</label>
+            <input type="number" id="mass-custom-input" min="0.1" step="0.1" placeholder="Ex.: 12.5" />
+          </div>
+        </article>
+
+        <article class="calc-step" data-step="2">
+          <div class="calc-step-head">
+            <span class="calc-step-num">2</span>
+            <div>
+              <h2>Volume de diluente</h2>
+              <p>Água bacteriostática / estéril / NaCl</p>
+            </div>
+          </div>
+          <div class="calc-options" id="diluent-options" role="group" aria-label="Volume de diluente"></div>
+          <div class="calc-custom" id="diluent-custom" hidden>
+            <label for="diluent-custom-input">Volume personalizado (mL)</label>
+            <input type="number" id="diluent-custom-input" min="0.1" step="0.1" placeholder="Ex.: 0.75" />
+          </div>
+        </article>
+
+        <article class="calc-step" data-step="3">
+          <div class="calc-step-head">
+            <span class="calc-step-num">3</span>
+            <div>
+              <h2>Seringa de insulina U-100</h2>
+              <p>Capacidade da seringa que você está usando</p>
+            </div>
+          </div>
+          <div class="calc-syringes" id="syringe-options" role="group" aria-label="Tipo de seringa"></div>
+        </article>
+
+        <article class="calc-step" data-step="4">
+          <div class="calc-step-head">
+            <span class="calc-step-num">4</span>
+            <div>
+              <h2>Dose desejada</h2>
+              <p>Quantidade por aplicação</p>
+            </div>
+          </div>
+          <div class="calc-options calc-options--dense" id="dose-options" role="group" aria-label="Dose desejada"></div>
+          <div class="calc-custom" id="dose-custom" hidden>
+            <label for="dose-custom-input">Dose personalizada (mg)</label>
+            <input type="number" id="dose-custom-input" min="0.01" step="0.01" placeholder="Ex.: 3.5" />
+          </div>
+        </article>
+      </section>
+
+      <aside class="calc-result" aria-live="polite">
+        <h2 class="calc-result-title">Resultado</h2>
+
+        <div class="calc-result-visual">
+          <div class="calc-syringe-wrap">
+            <svg id="syringe-svg" class="calc-syringe-svg" viewBox="0 0 120 420" role="img" aria-label="Marcação na seringa">
+              <defs>
+                <linearGradient id="barrelGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#e8eef8"/>
+                  <stop offset="50%" stop-color="#f8fbff"/>
+                  <stop offset="100%" stop-color="#e8eef8"/>
+                </linearGradient>
+              </defs>
+              <!-- needle -->
+              <rect x="57" y="8" width="6" height="28" rx="2" fill="#94a3b8"/>
+              <!-- hub -->
+              <rect x="42" y="34" width="36" height="16" rx="3" fill="#64748b"/>
+              <!-- barrel -->
+              <rect x="38" y="50" width="44" height="300" rx="8" fill="url(#barrelGrad)" stroke="#94a3b8" stroke-width="2"/>
+              <!-- liquid fill -->
+              <rect id="syringe-fill" x="40" y="348" width="40" height="0" fill="#3b82f6" opacity="0.55"/>
+              <!-- tick marks group -->
+              <g id="syringe-ticks"></g>
+              <!-- plunger line -->
+              <line id="syringe-plunger" x1="36" y1="348" x2="84" y2="348" stroke="#1d4ed8" stroke-width="3" stroke-linecap="round"/>
+              <!-- plunger rod -->
+              <rect id="syringe-rod" x="54" y="348" width="12" height="50" rx="2" fill="#475569"/>
+              <rect id="syringe-flange" x="40" y="392" width="40" height="10" rx="2" fill="#334155"/>
+              <!-- unit label -->
+              <text id="syringe-label" x="98" y="352" font-size="14" font-weight="700" fill="#1d4ed8">0</text>
+            </svg>
+          </div>
+
+          <div class="calc-result-main">
+            <div class="calc-volume-box" id="volume-box">
+              <span class="calc-volume-value" id="volume-display">—</span>
+              <span class="calc-volume-hint">volume estimado na seringa</span>
+            </div>
+
+            <div class="calc-stats">
+              <div class="calc-stat">
+                <span class="calc-stat-label">Concentração</span>
+                <span class="calc-stat-value" id="concentration-display">—</span>
+              </div>
+              <div class="calc-stat">
+                <span class="calc-stat-label">Doses no frasco</span>
+                <span class="calc-stat-value" id="doses-display">—</span>
+              </div>
+            </div>
+
+            <p class="calc-warning" id="calc-warning" hidden></p>
+          </div>
+        </div>
+
+        <div class="calc-table-wrap">
+          <table class="calc-table" id="dose-table">
+            <thead>
+              <tr>
+                <th>Dose</th>
+                <th>Volume</th>
+                <th>Units</th>
+              </tr>
+            </thead>
+            <tbody id="dose-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="calc-actions">
+          <button type="button" class="calc-btn calc-btn--ghost" id="btn-copy">Copiar</button>
+          <a class="calc-btn calc-btn--whatsapp" id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <button type="button" class="calc-btn calc-btn--primary" id="btn-print">Imprimir</button>
+          <button type="button" class="calc-btn calc-btn--ghost" id="btn-reset">Resetar</button>
+        </div>
+
+        <p class="calc-disclaimer">
+          Ferramenta apenas informativa. Não substitui orientação médica, farmacêutica ou profissional de saúde.
+          Confira sempre o rótulo e as instruções do produto.
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <%- include("partials/footer") %>
+  <script src="/calculadora.js" defer></script>
+</body>
+</html>
