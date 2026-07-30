@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ProgressBar } from "@/components/progress-bar";
 import {
   StepPerfil,
@@ -38,6 +38,7 @@ export function SurveyPage() {
     lastSaved,
     setConfig,
     setSession,
+    setSessionToken,
     updateRespostas,
     setStep,
     setSaving,
@@ -56,6 +57,9 @@ export function SurveyPage() {
   const isCompleted = status === "completed";
   const canRestart = !isCompleted && currentStep !== 9;
 
+  const sessionPromiseRef = useRef<Promise<string> | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+
   const init = useCallback(async () => {
     try {
       const cfg = await fetchConfig();
@@ -67,7 +71,6 @@ export function SurveyPage() {
           const sessao = await fetchSession(savedToken);
           if (sessao.status !== "completed") {
             setSession(sessao.sessionToken, sessao.currentStep, sessao.respostas, sessao.status);
-            setLoading(false);
             return;
           }
           localStorage.removeItem(SESSION_KEY);
@@ -75,10 +78,7 @@ export function SurveyPage() {
           localStorage.removeItem(SESSION_KEY);
         }
       }
-
-      const nova = await createSession();
-      localStorage.setItem(SESSION_KEY, nova.sessionToken);
-      setSession(nova.sessionToken, nova.currentStep, nova.respostas, nova.status);
+      // Nenhuma sessão é criada aqui: só abrir a página não é participar.
     } catch (err) {
       setInitError(err instanceof Error ? err.message : "Erro ao iniciar pesquisa");
     } finally {
@@ -90,12 +90,33 @@ export function SurveyPage() {
     init();
   }, [init]);
 
+  const ensureSession = useCallback(async (): Promise<string> => {
+    if (sessionToken) return sessionToken;
+    if (!sessionPromiseRef.current) {
+      sessionPromiseRef.current = createSession()
+        .then((nova) => {
+          localStorage.setItem(SESSION_KEY, nova.sessionToken);
+          setSessionToken(nova.sessionToken);
+          return nova.sessionToken;
+        })
+        .catch((err) => {
+          sessionPromiseRef.current = null;
+          throw err;
+        });
+    }
+    return sessionPromiseRef.current;
+  }, [sessionToken, setSessionToken]);
+
   const autoSave = useCallback(
     async (step: number, data: typeof respostas, stepStatus?: string) => {
-      if (!sessionToken) return;
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
       setSaving(true);
       try {
-        await saveSession(sessionToken, {
+        const token = await ensureSession();
+        await saveSession(token, {
           currentStep: step,
           respostas: data,
           status: stepStatus,
@@ -109,15 +130,33 @@ export function SurveyPage() {
         setSaving(false);
       }
     },
-    [sessionToken, setSaving, setLastSaved]
+    [ensureSession, setSaving, setLastSaved]
   );
+
+  // Sem debounce, cada tecla digitada nos campos de texto virava um POST.
+  const scheduleSave = useCallback(
+    (step: number, data: typeof respostas) => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = window.setTimeout(() => {
+        saveTimerRef.current = null;
+        autoSave(step, data);
+      }, 800);
+    },
+    [autoSave]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   function handleChange(partial: typeof respostas) {
     const next = { ...respostas, ...partial };
     updateRespostas(partial);
     setErrors({});
     setSubmitError(null);
-    autoSave(currentStep, next);
+    scheduleSave(currentStep, next);
   }
 
   async function applySession(sessao: SessaoResponse) {
@@ -130,12 +169,13 @@ export function SurveyPage() {
   }
 
   async function handleContinueResume() {
-    if (!pendingResume || !sessionToken) return;
+    if (!pendingResume) return;
     setResumeBusy(true);
     try {
+      const token = await ensureSession();
       const sessao = await resumeSession({
         email: respostas.email || pendingResume.respostas?.email || "",
-        currentSessionToken: sessionToken,
+        currentSessionToken: token,
         resumeToken: pendingResume.sessionToken,
       });
       await applySession(sessao);
@@ -147,11 +187,11 @@ export function SurveyPage() {
   }
 
   async function handleRestartFromModal() {
-    if (!sessionToken) return;
     setResumeBusy(true);
     try {
       const email = respostas.email || "";
-      const sessao = await restartSession({ email, sessionToken });
+      const token = await ensureSession();
+      const sessao = await restartSession({ email, sessionToken: token });
       const nextRespostas = { ...sessao.respostas, email };
       await saveSession(sessao.sessionToken, {
         currentStep: 2,
@@ -177,6 +217,7 @@ export function SurveyPage() {
     try {
       const email = respostas.email;
       const previousToken = sessionToken;
+      sessionPromiseRef.current = null;
       const nova = await createSession();
 
       if (email) {
@@ -211,10 +252,18 @@ export function SurveyPage() {
 
     setSubmitError(null);
 
+    // Um autosave pendente cairia depois da conclusão e seria rejeitado
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
     try {
-      if (currentStep === 1 && sessionToken) {
-        const verification = await verifyEmail(respostas.email || "", sessionToken);
-        if (verification.resume && verification.resume.sessionToken !== sessionToken) {
+      const token = await ensureSession();
+
+      if (currentStep === 1) {
+        const verification = await verifyEmail(respostas.email || "", token);
+        if (verification.resume && verification.resume.sessionToken !== token) {
           setPendingResume(verification.resume);
           return;
         }
@@ -222,16 +271,16 @@ export function SurveyPage() {
 
       // Quem não usa: encerra na etapa 2
       if (currentStep === 2 && respostas.utilizouTirzepatida === false) {
-        await completeSession(sessionToken!, respostas);
-        setSession(sessionToken!, 9, respostas, "completed");
+        await completeSession(token, respostas);
+        setSession(token, 9, respostas, "completed");
         setStep(9);
         return;
       }
 
       // Quem usa: conclui de fato na etapa 8
       if (currentStep === 8) {
-        await completeSession(sessionToken!, respostas);
-        setSession(sessionToken!, 9, respostas, "completed");
+        await completeSession(token, respostas);
+        setSession(token, 9, respostas, "completed");
         setStep(9);
         return;
       }

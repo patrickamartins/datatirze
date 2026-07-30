@@ -3,7 +3,22 @@ const crypto = require("crypto");
 const { MARCAS, DOSES, ESTADOS_BR, OPCOES, TOTAL_STEPS } = require("./constants");
 const { buildDashboardData } = require("./analytics");
 const { rowsToCsv, rowsToExcelBuffer } = require("./export");
-const { repairPesquisaRespostas } = require("./repair");
+const { repairPesquisaRespostas, ACTIVE_WINDOW_MINUTES } = require("./repair");
+
+/**
+ * Marca como abandonada toda sessão sem atividade dentro da janela ativa.
+ * `updated_at` é preservado de propósito: ele é a última atividade real do
+ * usuário e é o que alimenta o mailing de retorno.
+ */
+async function markStaleSessionsAbandoned(pool) {
+  await pool.query(
+    `UPDATE pesquisa_sessoes
+     SET status = 'abandoned'
+     WHERE status = 'in_progress'
+       AND updated_at < NOW() - ($1 * INTERVAL '1 minute')`,
+    [ACTIVE_WINDOW_MINUTES]
+  );
+}
 
 function normalizeEmail(email) {
   if (!email || typeof email !== "string") return null;
@@ -588,16 +603,11 @@ function createPesquisaRouter(pool, bcrypt) {
         Expires: "0",
       });
 
-      // Sempre sincroniza/repara antes de devolver números atualizados
+      // Repair é throttled internamente: o painel atualiza sozinho e sem isso
+      // ele monopolizava o pool de conexões usado por quem está respondendo.
       await repairPesquisaRespostas(pool);
 
-      // Sessões paradas há mais de 3h sem concluir = abandonadas (não inflar "em andamento")
-      await pool.query(`
-        UPDATE pesquisa_sessoes
-        SET status = 'abandoned', updated_at = NOW()
-        WHERE status = 'in_progress'
-          AND updated_at < NOW() - INTERVAL '3 hours'
-      `);
+      await markStaleSessionsAbandoned(pool);
 
       const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
       const result = await pool.query(
@@ -610,16 +620,32 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
-      const [emAndamento, concluidas, comDados, abandonadas, abandonadasDetalhe] = await Promise.all([
-        pool.query(`
-          SELECT COUNT(*)::int AS total
-          FROM pesquisa_sessoes
-          WHERE status = 'in_progress'
-            AND updated_at >= NOW() - INTERVAL '3 hours'
-        `),
+      const [emAndamento, concluidas, comDados, abandonadas, funil, abandonadasDetalhe] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*)::int AS total
+           FROM pesquisa_sessoes
+           WHERE status = 'in_progress'
+             AND updated_at >= NOW() - ($1 * INTERVAL '1 minute')`,
+          [ACTIVE_WINDOW_MINUTES]
+        ),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL`),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'abandoned'`),
+        // Onde as pessoas param: sessões sem nenhuma resposta são só visitas na página
+        pool.query(`
+          SELECT
+            COUNT(*) FILTER (WHERE respostas = '{}'::jsonb)::int AS vazias,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 1)::int AS etapa1,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 2)::int AS etapa2,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 3)::int AS etapa3,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 4)::int AS etapa4,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 5)::int AS etapa5,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 6)::int AS etapa6,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 7)::int AS etapa7,
+            COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step >= 8)::int AS etapa8
+          FROM pesquisa_sessoes
+          WHERE status <> 'completed'
+        `),
         pool.query(`
           SELECT
             ps.session_token,
@@ -677,16 +703,29 @@ function createPesquisaRouter(pool, bcrypt) {
         });
       }
 
+      const f = funil.rows[0];
       const dashboard = buildDashboardData(rows);
       dashboard.resumo = {
         respostasConcluidas: concluidas.rows[0].total,
         sessoesEmAndamento: emAndamento.rows[0].total,
+        janelaAtivaMinutos: ACTIVE_WINDOW_MINUTES,
         filtradas: rows.length,
         respostasComEmail: comDados.rows[0].total,
         sessoesAbandonadas: abandonadas.rows[0].total,
         sessoesAbandonadasComEmail: sessoesAbandonadasLista.length,
+        sessoesVazias: f.vazias,
         atualizadoEm: new Date().toISOString(),
       };
+      dashboard.funilEtapas = [
+        { step: 1, label: "Perfil", total: f.etapa1 },
+        { step: 2, label: "Experiência", total: f.etapa2 },
+        { step: 3, label: "Histórico", total: f.etapa3 },
+        { step: 4, label: "Compra", total: f.etapa4 },
+        { step: 5, label: "Resultados", total: f.etapa5 },
+        { step: 6, label: "Saúde", total: f.etapa6 },
+        { step: 7, label: "Efeitos", total: f.etapa7 },
+        { step: 8, label: "Conteúdo", total: f.etapa8 },
+      ];
       dashboard.sessoesAbandonadas = sessoesAbandonadasLista;
 
       res.json(dashboard);
@@ -732,12 +771,7 @@ function createPesquisaRouter(pool, bcrypt) {
 
   router.get("/admin/export/abandonadas.csv", requirePesquisaAdmin, async (req, res) => {
     try {
-      await pool.query(`
-        UPDATE pesquisa_sessoes
-        SET status = 'abandoned', updated_at = NOW()
-        WHERE status = 'in_progress'
-          AND updated_at < NOW() - INTERVAL '3 hours'
-      `);
+      await markStaleSessionsAbandoned(pool);
 
       const result = await pool.query(`
         SELECT

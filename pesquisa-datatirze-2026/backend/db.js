@@ -77,6 +77,10 @@ async function initPesquisaDb(pool) {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_pesquisa_sessoes_token ON pesquisa_sessoes(session_token)
   `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_pesquisa_sessoes_status_updated
+    ON pesquisa_sessoes(status, updated_at)
+  `);
 
   await pool.query(`
     ALTER TABLE pesquisa_respostas ADD COLUMN IF NOT EXISTS email TEXT

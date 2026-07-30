@@ -1,3 +1,15 @@
+/** Minutos sem atividade a partir dos quais a sessão deixa de ser considerada ativa. */
+const ACTIVE_WINDOW_MINUTES = 15;
+
+/** O repair é caro: nunca roda mais de uma vez neste intervalo. */
+const REPAIR_MIN_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Teto de sessões avaliadas por execução, para não varrer a tabela inteira. */
+const REPAIR_BATCH_LIMIT = 200;
+
+let lastRepairAt = 0;
+let repairInFlight = null;
+
 function looksComplete(respostas = {}) {
   if (!respostas.email) return false;
 
@@ -5,6 +17,7 @@ function looksComplete(respostas = {}) {
   const utilizouBool =
     utilizou === true || utilizou === "true" ? true : utilizou === false || utilizou === "false" ? false : null;
 
+  // Quem não utiliza encerra na etapa 2: estes campos já são o fim do questionário.
   if (utilizouBool === false) {
     return Boolean(
       respostas.pretendeUtilizar &&
@@ -16,11 +29,16 @@ function looksComplete(respostas = {}) {
     );
   }
 
+  // Quem utiliza só termina na etapa 8; exigir os campos dessa etapa evita
+  // marcar como concluída a sessão de alguém que ainda está respondendo.
   if (utilizouBool === true) {
     return Boolean(
       respostas.idade &&
         respostas.marcaAtual &&
-        (respostas.ondeCompra || respostas.faltaMercado || respostas.fontesInformacao)
+        respostas.tipoConteudo &&
+        respostas.faltaMercado &&
+        Array.isArray(respostas.fontesInformacao) &&
+        respostas.fontesInformacao.length > 0
     );
   }
 
@@ -36,24 +54,30 @@ function toJsonb(value) {
 /**
  * Repara sessões que chegaram ao fim (ex.: etapa 9) mas ficaram como in_progress
  * por bug antigo de não chamar /concluir.
+ *
+ * Só considera sessões paradas há mais de ACTIVE_WINDOW_MINUTES: uma sessão ainda
+ * ativa não pode ser fechada por baixo de quem está respondendo, senão os
+ * salvamentos seguintes passam a falhar com "pesquisa já concluída".
  */
-async function repairPesquisaRespostas(pool) {
-  const sessoes = await pool.query(`
-    SELECT id, session_token, current_step, status, respostas
-    FROM pesquisa_sessoes
-    WHERE status = 'in_progress'
-       OR current_step >= 9
-  `);
+async function runRepair(pool) {
+  const sessoes = await pool.query(
+    `SELECT id, session_token, current_step, status, respostas
+     FROM pesquisa_sessoes
+     WHERE status <> 'completed'
+       AND NULLIF(respostas->>'email', '') IS NOT NULL
+       AND updated_at < NOW() - ($1 * INTERVAL '1 minute')
+       AND (current_step >= 8 OR respostas->>'utilizouTirzepatida' = 'false')
+     ORDER BY updated_at DESC
+     LIMIT $2`,
+    [ACTIVE_WINDOW_MINUTES, REPAIR_BATCH_LIMIT]
+  );
 
   let repaired = 0;
 
   for (const sessao of sessoes.rows) {
     try {
       const respostas = sessao.respostas || {};
-      const shouldComplete =
-        sessao.status === "completed" ||
-        sessao.current_step >= 8 ||
-        looksComplete(respostas);
+      const shouldComplete = sessao.current_step >= 9 || looksComplete(respostas);
 
       if (!shouldComplete) continue;
 
@@ -170,17 +194,25 @@ async function repairPesquisaRespostas(pool) {
   }
 
   try {
-    const orphan = await pool.query(`
-      UPDATE pesquisa_respostas
-      SET concluida = TRUE, updated_at = NOW()
-      WHERE concluida IS NOT TRUE
-        AND email IS NOT NULL
-        AND (
-          (utilizou_tirzepatida = FALSE AND pretende_utilizar IS NOT NULL)
-          OR (utilizou_tirzepatida = TRUE AND falta_mercado IS NOT NULL AND marca_atual IS NOT NULL)
-        )
-      RETURNING id
-    `);
+    const orphan = await pool.query(
+      `UPDATE pesquisa_respostas
+       SET concluida = TRUE, updated_at = NOW()
+       WHERE concluida IS NOT TRUE
+         AND email IS NOT NULL
+         AND updated_at < NOW() - ($1 * INTERVAL '1 minute')
+         AND (
+           (utilizou_tirzepatida = FALSE AND pretende_utilizar IS NOT NULL)
+           OR (
+             utilizou_tirzepatida = TRUE
+             AND marca_atual IS NOT NULL
+             AND falta_mercado IS NOT NULL
+             AND tipo_conteudo IS NOT NULL
+             AND fontes_informacao IS NOT NULL
+           )
+         )
+       RETURNING id`,
+      [ACTIVE_WINDOW_MINUTES]
+    );
     repaired += orphan.rowCount || 0;
   } catch (err) {
     console.error("[pesquisa] Falha no update órfão de concluida:", err.message);
@@ -193,4 +225,30 @@ async function repairPesquisaRespostas(pool) {
   return repaired;
 }
 
-module.exports = { repairPesquisaRespostas, looksComplete };
+/**
+ * O repair faz várias queries por sessão. Chamado a cada carga do painel ele
+ * esgotava o pool de conexões e derrubava os salvamentos de quem respondia,
+ * então aqui ele é limitado por intervalo e nunca roda em paralelo consigo mesmo.
+ */
+async function repairPesquisaRespostas(pool, { force = false } = {}) {
+  if (repairInFlight) return repairInFlight;
+  if (!force && Date.now() - lastRepairAt < REPAIR_MIN_INTERVAL_MS) return 0;
+
+  repairInFlight = runRepair(pool)
+    .catch((err) => {
+      console.error("[pesquisa] Repair falhou:", err.message);
+      return 0;
+    })
+    .finally(() => {
+      lastRepairAt = Date.now();
+      repairInFlight = null;
+    });
+
+  return repairInFlight;
+}
+
+module.exports = {
+  repairPesquisaRespostas,
+  looksComplete,
+  ACTIVE_WINDOW_MINUTES,
+};

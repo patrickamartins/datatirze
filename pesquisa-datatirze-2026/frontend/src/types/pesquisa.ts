@@ -80,8 +80,11 @@ export interface DashboardData {
     respostasComEmail?: number;
     sessoesAbandonadas?: number;
     sessoesAbandonadasComEmail?: number;
+    sessoesVazias?: number;
+    janelaAtivaMinutos?: number;
     atualizadoEm?: string;
   };
+  funilEtapas?: Array<{ step: number; label: string; total: number }>;
   demografia: {
     idade: ChartItem[];
     genero: ChartItem[];

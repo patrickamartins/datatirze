@@ -70,7 +70,9 @@ export function AdminPage() {
   useEffect(() => {
     if (!authChecked) return;
     load();
-    const interval = setInterval(load, 15000);
+    // O dashboard dispara sincronização pesada no banco: recarregar a cada 15s
+    // competia por conexões com quem estava respondendo a pesquisa.
+    const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
   }, [authChecked, load]);
 
@@ -207,7 +209,7 @@ export function AdminPage() {
           <StatCard
             label="Sessões em andamento"
             value={data.resumo?.sessoesEmAndamento ?? 0}
-            sub="Ativas nas últimas 3h"
+            sub={`Ativas nos últimos ${data.resumo?.janelaAtivaMinutos ?? 15} min`}
           />
         </div>
 
@@ -220,6 +222,33 @@ export function AdminPage() {
             sub={`${data.resumo?.sessoesAbandonadasComEmail ?? data.sessoesAbandonadas?.length ?? 0} com e-mail p/ mailing`}
           />
         </div>
+
+        {(data.funilEtapas || []).length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-700">Onde as pessoas param</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Sessões não concluídas por etapa atual.{" "}
+                {(data.resumo?.sessoesVazias ?? 0) > 0 && (
+                  <>
+                    Além destas, <strong>{data.resumo?.sessoesVazias}</strong> sessões são apenas visitas
+                    sem nenhuma resposta.
+                  </>
+                )}
+              </p>
+            </div>
+            <ChartCard title="Sessões incompletas por etapa">
+              <BarChartPanel
+                data={(data.funilEtapas || []).map((e) => ({
+                  name: `${e.step}. ${e.label}`,
+                  total: e.total,
+                }))}
+                layout="horizontal"
+                color="#f59e0b"
+              />
+            </ChartCard>
+          </div>
+        )}
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">

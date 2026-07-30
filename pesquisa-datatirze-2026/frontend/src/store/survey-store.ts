@@ -11,6 +11,7 @@ interface SurveyState {
   lastSaved: Date | null;
   setConfig: (config: PesquisaConfig) => void;
   setSession: (token: string, step: number, respostas: PesquisaRespostas, status: string) => void;
+  setSessionToken: (token: string) => void;
   updateRespostas: (partial: PesquisaRespostas) => void;
   setStep: (step: number) => void;
   setSaving: (saving: boolean) => void;
@@ -29,6 +30,8 @@ export const useSurveyStore = create<SurveyState>((set) => ({
   setConfig: (config) => set({ config }),
   setSession: (token, step, respostas, status) =>
     set({ sessionToken: token, currentStep: step, respostas, status }),
+  // Sessão criada sob demanda: preserva o que o usuário já digitou
+  setSessionToken: (token) => set({ sessionToken: token }),
   updateRespostas: (partial) =>
     set((state) => ({ respostas: { ...state.respostas, ...partial } })),
   setStep: (step) => set({ currentStep: step }),
