@@ -15,7 +15,7 @@ async function markStaleSessionsAbandoned(pool) {
     `UPDATE pesquisa_sessoes
      SET status = 'abandoned'
      WHERE status = 'in_progress'
-       AND updated_at < NOW() - ($1 * INTERVAL '1 minute')`,
+       AND updated_at < NOW() - ($1::int * INTERVAL '1 minute')`,
     [ACTIVE_WINDOW_MINUTES]
   );
 }
@@ -622,10 +622,12 @@ function createPesquisaRouter(pool, bcrypt) {
 
       const [emAndamento, concluidas, comDados, abandonadas, funil, abandonadasDetalhe] = await Promise.all([
         pool.query(
-          `SELECT COUNT(*)::int AS total
+          `SELECT
+             COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb)::int AS com_dados
            FROM pesquisa_sessoes
            WHERE status = 'in_progress'
-             AND updated_at >= NOW() - ($1 * INTERVAL '1 minute')`,
+             AND updated_at >= NOW() - ($1::int * INTERVAL '1 minute')`,
           [ACTIVE_WINDOW_MINUTES]
         ),
         pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
@@ -708,6 +710,7 @@ function createPesquisaRouter(pool, bcrypt) {
       dashboard.resumo = {
         respostasConcluidas: concluidas.rows[0].total,
         sessoesEmAndamento: emAndamento.rows[0].total,
+        sessoesEmAndamentoComDados: emAndamento.rows[0].com_dados,
         janelaAtivaMinutos: ACTIVE_WINDOW_MINUTES,
         filtradas: rows.length,
         respostasComEmail: comDados.rows[0].total,

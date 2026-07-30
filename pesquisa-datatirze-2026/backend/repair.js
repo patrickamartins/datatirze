@@ -65,7 +65,7 @@ async function runRepair(pool) {
      FROM pesquisa_sessoes
      WHERE status <> 'completed'
        AND NULLIF(respostas->>'email', '') IS NOT NULL
-       AND updated_at < NOW() - ($1 * INTERVAL '1 minute')
+       AND updated_at < NOW() - ($1::int * INTERVAL '1 minute')
        AND (current_step >= 8 OR respostas->>'utilizouTirzepatida' = 'false')
      ORDER BY updated_at DESC
      LIMIT $2`,
@@ -199,7 +199,7 @@ async function runRepair(pool) {
        SET concluida = TRUE, updated_at = NOW()
        WHERE concluida IS NOT TRUE
          AND email IS NOT NULL
-         AND updated_at < NOW() - ($1 * INTERVAL '1 minute')
+         AND updated_at < NOW() - ($1::int * INTERVAL '1 minute')
          AND (
            (utilizou_tirzepatida = FALSE AND pretende_utilizar IS NOT NULL)
            OR (

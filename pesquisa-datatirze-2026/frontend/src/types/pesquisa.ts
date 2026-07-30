@@ -81,6 +81,7 @@ export interface DashboardData {
     sessoesAbandonadas?: number;
     sessoesAbandonadasComEmail?: number;
     sessoesVazias?: number;
+    sessoesEmAndamentoComDados?: number;
     janelaAtivaMinutos?: number;
     atualizadoEm?: string;
   };

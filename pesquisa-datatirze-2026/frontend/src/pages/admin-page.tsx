@@ -209,7 +209,7 @@ export function AdminPage() {
           <StatCard
             label="Sessões em andamento"
             value={data.resumo?.sessoesEmAndamento ?? 0}
-            sub={`Ativas nos últimos ${data.resumo?.janelaAtivaMinutos ?? 15} min`}
+            sub={`Últimos ${data.resumo?.janelaAtivaMinutos ?? 15} min · ${data.resumo?.sessoesEmAndamentoComDados ?? 0} já respondendo`}
           />
         </div>
 

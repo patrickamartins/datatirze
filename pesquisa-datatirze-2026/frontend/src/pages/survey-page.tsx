@@ -78,7 +78,12 @@ export function SurveyPage() {
           localStorage.removeItem(SESSION_KEY);
         }
       }
-      // Nenhuma sessão é criada aqui: só abrir a página não é participar.
+
+      // A sessão é criada já na abertura para o painel enxergar quem chega.
+      // O painel separa quem só visitou de quem realmente respondeu algo.
+      const nova = await createSession();
+      localStorage.setItem(SESSION_KEY, nova.sessionToken);
+      setSession(nova.sessionToken, nova.currentStep, nova.respostas, nova.status);
     } catch (err) {
       setInitError(err instanceof Error ? err.message : "Erro ao iniciar pesquisa");
     } finally {
