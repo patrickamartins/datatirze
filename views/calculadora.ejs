@@ -4,8 +4,8 @@
   <%- include("partials/gtm-head") %>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calcula Minha Dose — DataTirze</title>
-  <meta name="description" content="Calculadora informativa de reconstituição e dosagem de medicação liofilizada. DataTirze." />
+  <title>Qual a Minha Dose? — DataTirze</title>
+  <meta name="description" content="Calculadora informativa de reconstituição e dosagem de medicação. DataTirze." />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/calculadora.css" />
 </head>
@@ -15,9 +15,11 @@
     <%- include("partials/header") %>
 
     <header class="calc-hero">
-      <p class="calc-eyebrow">DataTirze</p>
-      <h1>Calcula Minha Dose</h1>
+      <h1>Qual a Minha Dose?</h1>
       <p class="calc-subtitle">Calculadora informativa de reconstituição e dosagem</p>
+      <button type="button" class="calc-help-btn" id="btn-help-info" aria-haspopup="dialog">
+        Onde encontrar as informações
+      </button>
     </header>
 
     <div class="calc-layout">
@@ -74,7 +76,7 @@
           <div class="calc-options calc-options--dense" id="dose-options" role="group" aria-label="Dose desejada"></div>
           <div class="calc-custom" id="dose-custom" hidden>
             <label for="dose-custom-input">Dose personalizada (mg)</label>
-            <input type="number" id="dose-custom-input" min="0.01" step="0.01" placeholder="Ex.: 3.5" />
+            <input type="number" id="dose-custom-input" min="0.01" max="15" step="0.01" placeholder="Ex.: 3.5" />
           </div>
         </article>
       </section>
@@ -158,6 +160,26 @@
           Confira sempre o rótulo e as instruções do produto.
         </p>
       </aside>
+    </div>
+  </div>
+
+  <div id="calc-help-modal" class="calc-modal" hidden role="dialog" aria-modal="true" aria-labelledby="calc-help-title">
+    <div class="calc-modal-backdrop" data-close-help-modal></div>
+    <div class="calc-modal-card">
+      <button type="button" class="calc-modal-close" data-close-help-modal aria-label="Fechar">×</button>
+      <h2 id="calc-help-title">Onde encontrar as informações</h2>
+      <p class="calc-modal-text">
+        Verifique a caixa ou rótulo da sua ampola contendo a miligramagem do medicamento e os mls de diluição,
+        insira na calculadora para verificar quanto puxar na sua seringa.
+      </p>
+      <img
+        class="calc-modal-image"
+        src="/images/tg-rotulo-exemplo.png"
+        alt="Exemplo de rótulo T.G. destacando Tirzepatida 15 mg/0,5mL"
+        width="720"
+        height="960"
+        loading="lazy"
+      />
     </div>
   </div>
 

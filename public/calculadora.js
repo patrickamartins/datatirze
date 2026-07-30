@@ -3,9 +3,7 @@
 
   var MASS_OPTIONS = [5, 10, 15, 20, 30, 60];
   var DILUENT_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3];
-  var DOSE_OPTIONS = [
-    0.25, 0.5, 1, 1.7, 2, 2.4, 2.5, 4, 5, 7.5, 10, 12, 12.5, 15, 17.5, 20, 25, 30,
-  ];
+  var DOSE_OPTIONS = [0.25, 0.5, 1, 1.7, 2, 2.4, 2.5, 4, 5, 7.5, 10, 12, 12.5, 15];
   var SYRINGES = [
     { id: "03", label: ".3 mL", units: 30, ml: 0.3 },
     { id: "05", label: ".5 mL", units: 50, ml: 0.5 },
@@ -99,7 +97,8 @@
   function getDose() {
     if (state.doseCustom) {
       var v = parseFloat(els.doseCustomInput.value);
-      return isFinite(v) && v > 0 ? v : null;
+      if (!isFinite(v) || v <= 0) return null;
+      return Math.min(v, 15);
     }
     return state.dose;
   }
@@ -243,7 +242,7 @@
 
   function buildSummaryText(mass, diluent, dose, syringe, result) {
     return [
-      "Calcula Minha Dose — DataTirze",
+      "Qual a Minha Dose? — DataTirze",
       "Frasco: " + formatMg(mass),
       "Diluente: " + diluent + " mL",
       "Seringa: " + syringe.label + " (" + syringe.units + " UI)",
@@ -416,6 +415,35 @@
     els.diluentCustomInput.value = "";
     els.doseCustomInput.value = "";
     render();
+  });
+
+  var helpModal = document.getElementById("calc-help-modal");
+  var helpBtn = document.getElementById("btn-help-info");
+
+  function openHelpModal() {
+    if (!helpModal) return;
+    helpModal.hidden = false;
+    document.body.classList.add("calc-modal-open");
+  }
+
+  function closeHelpModal() {
+    if (!helpModal) return;
+    helpModal.hidden = true;
+    document.body.classList.remove("calc-modal-open");
+  }
+
+  if (helpBtn) {
+    helpBtn.addEventListener("click", openHelpModal);
+  }
+  if (helpModal) {
+    helpModal.querySelectorAll("[data-close-help-modal]").forEach(function (el) {
+      el.addEventListener("click", closeHelpModal);
+    });
+  }
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && helpModal && !helpModal.hidden) {
+      closeHelpModal();
+    }
   });
 
   render();
