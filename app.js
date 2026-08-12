@@ -659,18 +659,29 @@ const pesquisaRouter = createPesquisaRouter(pool, bcrypt);
 app.use("/api/pesquisa", pesquisaRouter);
 
 const pesquisaDistPath = path.join(__dirname, "pesquisa-datatirze-2026", "dist");
+
+app.get(["/pesquisa", "/pesquisa/"], (_req, res) => {
+  res.redirect(302, "/");
+});
+
 app.use("/pesquisa", express.static(pesquisaDistPath, {
   etag: false,
   lastModified: false,
+  index: false,
   setHeaders(res, filePath) {
     if (filePath.endsWith("index.html")) {
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     }
   },
 }));
-app.get(/^\/pesquisa(\/.*)?$/, (_req, res) => {
+
+app.get(/^\/pesquisa\/admin(\/.*)?$/, (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.sendFile(path.join(pesquisaDistPath, "index.html"));
+});
+
+app.get(/^\/pesquisa(\/.*)?$/, (_req, res) => {
+  res.redirect(302, "/");
 });
 
 // --- INICIAR SERVIDOR ---

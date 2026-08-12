@@ -76,6 +76,14 @@ function requirePesquisaAdmin(req, res, next) {
 function createPesquisaRouter(pool, bcrypt) {
   const router = express.Router();
 
+  router.use((req, res, next) => {
+    if (req.path.startsWith("/admin")) return next();
+    return res.status(410).json({
+      error: "A Pesquisa Nacional 2026 foi encerrada. Obrigado pela participação.",
+      code: "SURVEY_CLOSED",
+    });
+  });
+
   // E-mail só conta como participante se a pesquisa foi concluída
   async function emailJaUtilizado(email, sessionToken) {
     const result = await pool.query(

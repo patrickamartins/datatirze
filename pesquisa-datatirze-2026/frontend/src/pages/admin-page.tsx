@@ -401,7 +401,7 @@ export function AdminPage() {
             <PieChartPanel data={data.marcas.atual} />
           </ChartCard>
           <ChartCard title="Marcas já utilizadas">
-            <BarChartPanel data={data.marcas.utilizadas} layout="horizontal" />
+            <BarChartPanel data={data.marcas.utilizadas} layout="horizontal" percentBase={data.utilizadores} />
           </ChartCard>
           <ChartCard title="Marca considerada melhor">
             <BarChartPanel data={data.marcas.melhor} />
@@ -433,7 +433,12 @@ export function AdminPage() {
         <h2 className="text-lg font-bold text-brand-900">Saúde e efeitos</h2>
         <div className="grid gap-4 lg:grid-cols-2">
           <ChartCard title="Efeitos colaterais">
-            <BarChartPanel data={data.efeitosColaterais.lista.slice(0, 10)} layout="horizontal" color="#ef4444" />
+            <BarChartPanel
+              data={data.efeitosColaterais.lista.slice(0, 10)}
+              layout="horizontal"
+              color="#ef4444"
+              percentBase={data.utilizadores}
+            />
           </ChartCard>
           <ChartCard title="Acompanhamento médico">
             <PieChartPanel
@@ -454,7 +459,7 @@ export function AdminPage() {
         <h2 className="text-lg font-bold text-brand-900">Marketing e conteúdo</h2>
         <div className="grid gap-4 lg:grid-cols-2">
           <ChartCard title="Fontes de informação">
-            <BarChartPanel data={data.conteudo.fontes} layout="horizontal" />
+            <BarChartPanel data={data.conteudo.fontes} layout="horizontal" percentBase={data.utilizadores} />
           </ChartCard>
           <ChartCard title="Tipo de conteúdo preferido">
             <BarChartPanel data={data.conteudo.tipoConteudo} />
