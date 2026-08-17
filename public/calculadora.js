@@ -32,6 +32,10 @@
     diluentCustomInput: document.getElementById("diluent-custom-input"),
     doseCustomInput: document.getElementById("dose-custom-input"),
     volumeDisplay: document.getElementById("volume-display"),
+    volumeMl: document.getElementById("volume-ml"),
+    volumeUnits: document.getElementById("volume-units"),
+    stickyBar: document.getElementById("calc-sticky-bar"),
+    stickyUnits: document.getElementById("sticky-units"),
     concentrationDisplay: document.getElementById("concentration-display"),
     dosesDisplay: document.getElementById("doses-display"),
     warning: document.getElementById("calc-warning"),
@@ -240,6 +244,10 @@
     });
   }
 
+  function calculatorUrl() {
+    return window.location.origin + "/calculadora";
+  }
+
   function buildSummaryText(mass, diluent, dose, syringe, result) {
     return [
       "Qual a Minha Dose? — DataTirze",
@@ -251,6 +259,8 @@
       "Volume: " + formatMl(result.volumeMl),
       "Marcar na seringa: " + formatUnits(result.units),
       "Doses no frasco: ~" + Math.floor(result.dosesInVial * 10) / 10,
+      "",
+      "Calcule a sua dose também: " + calculatorUrl(),
       "",
       "Ferramenta informativa. Não substitui orientação profissional.",
     ].join("\n");
@@ -327,17 +337,19 @@
 
     var result = calculate(mass, diluent, dose, syringe);
     if (!result) {
-      els.volumeDisplay.textContent = "—";
+      if (els.volumeMl) els.volumeMl.textContent = "—";
+      if (els.volumeUnits) els.volumeUnits.textContent = "—";
       els.concentrationDisplay.textContent = "—";
       els.dosesDisplay.textContent = "—";
       els.warning.hidden = true;
+      if (els.stickyBar) els.stickyBar.hidden = true;
       updateSyringeVisual(0, syringe.units);
       buildComparisonTable(mass, diluent, dose, syringe);
       return;
     }
 
-    els.volumeDisplay.textContent =
-      formatMl(result.volumeMl).replace(" mL", "mL") + " | " + formatUnits(result.units).replace(" UI", " Units");
+    if (els.volumeMl) els.volumeMl.textContent = formatMl(result.volumeMl).replace(" mL", "mL");
+    if (els.volumeUnits) els.volumeUnits.textContent = formatUnits(result.units).replace(" UI", " Units");
     els.concentrationDisplay.textContent =
       (Math.round(result.concentration * 100) / 100).toLocaleString("pt-BR") + " mg/mL";
 
@@ -370,6 +382,11 @@
 
     updateSyringeVisual(result.units, syringe.units);
     buildComparisonTable(mass, diluent, dose, syringe);
+
+    if (els.stickyBar && els.stickyUnits) {
+      els.stickyUnits.textContent = formatUnits(result.units);
+      els.stickyBar.hidden = false;
+    }
 
     var summary = buildSummaryText(mass, diluent, dose, syringe, result);
     els.btnWhatsapp.href =

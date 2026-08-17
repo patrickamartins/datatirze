@@ -3,7 +3,7 @@
 <head>
   <%- include("partials/gtm-head") %>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Qual a Minha Dose? — DataTirze</title>
   <meta name="description" content="Calculadora informativa de reconstituição e dosagem de medicação. DataTirze." />
   <link rel="stylesheet" href="/style.css" />
@@ -81,7 +81,7 @@
         </article>
       </section>
 
-      <aside class="calc-result" aria-live="polite">
+      <aside class="calc-result" id="resultado" aria-live="polite">
         <h2 class="calc-result-title">Resultado</h2>
 
         <div class="calc-result-visual">
@@ -116,7 +116,10 @@
 
           <div class="calc-result-main">
             <div class="calc-volume-box" id="volume-box">
-              <span class="calc-volume-value" id="volume-display">—</span>
+              <span class="calc-volume-value" id="volume-display">
+                <span id="volume-ml">—</span>
+                <span id="volume-units">—</span>
+              </span>
               <span class="calc-volume-hint">volume estimado na seringa</span>
             </div>
 
@@ -161,6 +164,14 @@
         </p>
       </aside>
     </div>
+  </div>
+
+  <div class="calc-sticky-bar" id="calc-sticky-bar" hidden>
+    <div>
+      <span class="calc-sticky-label">Puxar na seringa</span>
+      <strong id="sticky-units">—</strong>
+    </div>
+    <a href="#resultado" class="calc-sticky-link">Ver resultado</a>
   </div>
 
   <div id="calc-help-modal" class="calc-modal" hidden role="dialog" aria-modal="true" aria-labelledby="calc-help-title">
