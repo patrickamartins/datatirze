@@ -20,153 +20,73 @@ body.relatorio-modal-open {
 .relatorio-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.62);
 }
 
 .relatorio-modal-card {
   position: relative;
   z-index: 1;
-  width: min(980px, 100%);
-  max-height: min(94vh, 760px);
+  width: min(420px, 100%);
+  max-height: min(94vh, 900px);
   overflow: auto;
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
+  display: flex;
+  flex-direction: column;
   background: #fff;
-  border-radius: 22px;
+  border-radius: 18px;
   box-shadow: 0 28px 70px rgba(15, 23, 42, 0.35);
 }
 
 .relatorio-modal-close {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 10px;
+  right: 12px;
   z-index: 3;
   border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 1.7rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: #334155;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  padding: 4px 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
 }
 
 .relatorio-modal-close:hover {
   color: #19224a;
+  background: #fff;
 }
 
-.relatorio-modal-visual {
-  position: relative;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
-    radial-gradient(circle at 70% 80%, rgba(34, 197, 94, 0.16), transparent 50%),
-    #f4f8fc;
-  padding: 28px 22px 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 18px;
-  border-radius: 22px 0 0 22px;
-}
-
-.relatorio-modal-visual img {
+.relatorio-modal-cover {
+  display: block;
   width: 100%;
   height: auto;
-  max-height: 420px;
-  object-fit: cover;
-  object-position: left center;
-  border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(25, 34, 74, 0.18);
-}
-
-.relatorio-modal-perks {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.relatorio-modal-perk {
-  text-align: center;
-  font-size: 0.7rem;
-  line-height: 1.35;
-  color: #334155;
-  font-weight: 600;
-}
-
-.relatorio-modal-perk span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin: 0 auto 6px;
-  border-radius: 999px;
-  background: #e8f5e9;
-  color: #16a34a;
-  font-size: 0.95rem;
+  border-radius: 18px 18px 0 0;
 }
 
 .relatorio-modal-form {
-  padding: 36px 32px 28px;
+  padding: 18px 18px 20px;
 }
 
-.relatorio-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #e8f1ff;
-  color: #1d4ed8;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.relatorio-badge svg {
-  width: 14px;
-  height: 14px;
-  color: #22c55e;
-}
-
-.relatorio-modal-form h2 {
-  margin: 14px 0 10px;
-  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
-  line-height: 1.2;
-  color: #19224a;
-}
-
-.relatorio-modal-form > p {
-  margin: 0 0 16px;
+.relatorio-modal-lead {
+  margin: 0 0 14px;
   color: #64748b;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: center;
 }
 
-.relatorio-checks {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 14px;
-  margin: 0 0 18px;
-  padding: 0;
-  list-style: none;
-}
-
-.relatorio-checks li {
-  position: relative;
-  padding-left: 22px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: #334155;
-}
-
-.relatorio-checks li::before {
-  content: "✓";
+.visually-hidden {
   position: absolute;
-  left: 0;
-  top: 0;
-  color: #22c55e;
-  font-weight: 800;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .relatorio-field {
@@ -174,25 +94,19 @@ body.relatorio-modal-open {
 }
 
 .relatorio-field label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   margin-bottom: 6px;
   font-size: 0.82rem;
   color: #19224a;
-}
-
-.relatorio-field label svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+  font-weight: 600;
 }
 
 .relatorio-field input {
   width: 100%;
+  box-sizing: border-box;
   border: 1.5px solid #dbe3ef;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 10px;
+  padding: 11px 13px;
   font-size: 0.95rem;
   color: #19224a;
   background: #fff;
@@ -213,6 +127,7 @@ body.relatorio-modal-open {
   margin: 0 0 10px;
   font-size: 0.78rem;
   color: #dc2626;
+  text-align: center;
 }
 
 .relatorio-submit {
@@ -220,17 +135,16 @@ body.relatorio-modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 52px;
+  min-height: 48px;
   border: none;
-  border-radius: 14px;
+  border-radius: 10px;
   background: #22c55e;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s, background 0.15s;
+  transition: opacity 0.15s, background 0.15s;
 }
 
 .relatorio-submit:hover:not(:disabled) {
@@ -242,48 +156,11 @@ body.relatorio-modal-open {
   cursor: not-allowed;
 }
 
-.relatorio-submit svg {
-  width: 18px;
-  height: 18px;
-}
-
 .relatorio-safe {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   margin: 12px 0 0;
   font-size: 0.72rem;
   color: #94a3b8;
-}
-
-.relatorio-safe svg {
-  width: 14px;
-  height: 14px;
-}
-
-@media (max-width: 860px) {
-  .relatorio-modal-card {
-    grid-template-columns: 1fr;
-    max-height: min(94vh, 900px);
-  }
-
-  .relatorio-modal-visual {
-    border-radius: 22px 22px 0 0;
-    padding: 18px 16px 14px;
-  }
-
-  .relatorio-modal-visual img {
-    max-height: 220px;
-  }
-
-  .relatorio-modal-form {
-    padding: 22px 18px 20px;
-  }
-
-  .relatorio-checks {
-    grid-template-columns: 1fr;
-  }
+  text-align: center;
 }
 
 @media (max-width: 480px) {
@@ -293,23 +170,12 @@ body.relatorio-modal-open {
   }
 
   .relatorio-modal-card {
-    border-radius: 18px 18px 10px 10px;
+    width: 100%;
+    border-radius: 16px 16px 10px 10px;
   }
 
-  .relatorio-modal-perks {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .relatorio-modal-perk {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-  }
-
-  .relatorio-modal-perk span {
-    margin: 0;
+  .relatorio-modal-cover {
+    border-radius: 16px 16px 0 0;
   }
 
   .relatorio-field input {
