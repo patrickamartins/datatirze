@@ -370,6 +370,19 @@ async function initDb() {
   await ensureColumnExists("aceite_termos_em", "TIMESTAMP");
   await ensureColumnExists("aceite_privacidade_em", "TIMESTAMP");
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pesquisa_downloads (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      whatsapp TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_pesquisa_downloads_email
+    ON pesquisa_downloads (lower(email))
+  `);
+
   await initPesquisaDb(pool);
   await ensurePesquisaAdminUser(pool);
   try {
@@ -451,6 +464,75 @@ app.get("/reportar", (req, res) => {
 app.get("/termos", (req, res) => res.render("termos"));
 app.get("/privacidade", (req, res) => res.render("privacidade"));
 app.get("/calculadora", (req, res) => res.render("calculadora"));
+
+function normalizeEmailLead(email) {
+  if (!email || typeof email !== "string") return null;
+  const trimmed = email.trim().toLowerCase();
+  return trimmed || null;
+}
+
+function isValidEmailLead(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeWhatsappLead(whatsapp) {
+  if (!whatsapp || typeof whatsapp !== "string") return null;
+  const digits = whatsapp.replace(/\D/g, "");
+  return digits || null;
+}
+
+function isValidWhatsappLead(digits) {
+  // Brasil: 10 ou 11 dígitos (com DDD) ou 12/13 com código do país 55
+  if (!digits) return false;
+  if (/^55\d{10,11}$/.test(digits)) return true;
+  if (/^\d{10,11}$/.test(digits)) return true;
+  return false;
+}
+
+const RELATORIO_PESQUISA_PATH = path.join(
+  __dirname,
+  "public",
+  "downloads",
+  "pesquisa-nacional-queridinhas-2026.pdf"
+);
+
+app.post("/api/relatorio-pesquisa", async (req, res) => {
+  try {
+    const email = normalizeEmailLead(req.body.email);
+    const whatsapp = normalizeWhatsappLead(req.body.whatsapp);
+
+    if (!email || !isValidEmailLead(email)) {
+      return res.status(400).json({ error: "Informe um e-mail válido." });
+    }
+    if (!whatsapp || !isValidWhatsappLead(whatsapp)) {
+      return res.status(400).json({ error: "Informe um WhatsApp válido com DDD." });
+    }
+
+    const fs = require("fs");
+    if (!fs.existsSync(RELATORIO_PESQUISA_PATH)) {
+      return res.status(404).json({ error: "Arquivo do relatório ainda não está disponível." });
+    }
+
+    await pool.query(
+      "INSERT INTO pesquisa_downloads (email, whatsapp) VALUES ($1, $2)",
+      [email, whatsapp]
+    );
+
+    res.download(
+      RELATORIO_PESQUISA_PATH,
+      "pesquisa-nacional-queridinhas-datatirze-2026.pdf",
+      (err) => {
+        if (err && !res.headersSent) {
+          console.error("Erro ao enviar relatório:", err);
+          res.status(500).json({ error: "Erro ao iniciar o download." });
+        }
+      }
+    );
+  } catch (err) {
+    console.error("Erro no download do relatório:", err);
+    res.status(500).json({ error: "Erro ao processar o download." });
+  }
+});
 
 // --- ROTAS DE AUTENTICAÇÃO ---
 app.get("/login", (req, res) => res.render("login", { error: null }));
