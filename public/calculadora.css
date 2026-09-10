@@ -474,15 +474,24 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    align-items: stretch;
   }
 
   .calc-result {
     position: static;
     order: 2;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .calc-steps {
     order: 1;
+    width: 100%;
+  }
+
+  .calc-step {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .calc-hero {
