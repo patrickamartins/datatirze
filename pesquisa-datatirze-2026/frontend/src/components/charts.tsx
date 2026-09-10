@@ -74,6 +74,7 @@ interface BarChartPanelProps {
   color?: string;
   /** Quando informado, a % é sobre esse total (ex.: respondentes). Senão, sobre a soma da série. */
   percentBase?: number;
+  labelWidth?: number;
 }
 
 export function BarChartPanel({
@@ -81,25 +82,27 @@ export function BarChartPanel({
   layout = "vertical",
   color = "#3b5bdb",
   percentBase,
+  labelWidth = 75,
 }: BarChartPanelProps) {
   if (!data.length) {
     return <p className="py-8 text-center text-sm text-slate-400">Sem dados</p>;
   }
 
   const percentData = toPercentData(data, percentBase);
+  const leftMargin = layout === "horizontal" ? Math.max(80, labelWidth + 8) : 0;
 
   return (
-    <ResponsiveContainer width="100%" height={Math.max(220, percentData.length * 36)}>
+    <ResponsiveContainer width="100%" height={Math.max(220, percentData.length * 40)}>
       <BarChart
         data={percentData}
         layout={layout === "horizontal" ? "vertical" : "horizontal"}
-        margin={{ top: 5, right: 16, left: layout === "horizontal" ? 80 : 0, bottom: 5 }}
+        margin={{ top: 5, right: 16, left: leftMargin, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
         {layout === "horizontal" ? (
           <>
             <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatPercent} unit="" />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={75} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={labelWidth} />
           </>
         ) : (
           <>

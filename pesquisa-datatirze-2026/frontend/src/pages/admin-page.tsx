@@ -466,6 +466,58 @@ export function AdminPage() {
           </ChartCard>
         </div>
 
+        <h2 className="text-lg font-bold text-brand-900">Resumo das respostas abertas</h2>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ChartCard
+            title={`Top 5 — O que mais falta (${data.topFaltaMercado?.totalRespostas || 0} respostas)`}
+          >
+            <BarChartPanel
+              data={data.topFaltaMercado?.top || []}
+              layout="horizontal"
+              color="#0f766e"
+              percentBase={data.topFaltaMercado?.totalRespostas || undefined}
+              labelWidth={160}
+            />
+            {(data.topFaltaMercado?.top || []).length > 0 && (
+              <ol className="mt-3 space-y-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                {data.topFaltaMercado.top.map((item, index) => (
+                  <li key={item.name} className="flex gap-2">
+                    <span className="font-semibold text-brand-800">{index + 1}.</span>
+                    <span>
+                      {item.name}
+                      <span className="text-slate-400"> — {item.total} menções</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </ChartCard>
+          <ChartCard
+            title={`Top 10 — Influenciadores citados (${data.topInfluenciadores?.totalRespostas || 0} respostas)`}
+          >
+            <BarChartPanel
+              data={data.topInfluenciadores?.top || []}
+              layout="horizontal"
+              color="#7c3aed"
+              percentBase={data.topInfluenciadores?.totalRespostas || undefined}
+              labelWidth={120}
+            />
+            {(data.topInfluenciadores?.top || []).length > 0 && (
+              <ol className="mt-3 space-y-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                {data.topInfluenciadores.top.map((item, index) => (
+                  <li key={item.name} className="flex gap-2">
+                    <span className="font-semibold text-brand-800">{index + 1}.</span>
+                    <span>
+                      {item.name}
+                      <span className="text-slate-400"> — {item.total} menções</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </ChartCard>
+        </div>
+
         {data.respostasAbertas.length > 0 && (
           <ChartCard title="Respostas abertas (amostra)" className="col-span-full">
             <div className="max-h-96 space-y-3 overflow-y-auto">

@@ -133,6 +133,14 @@ export interface DashboardData {
     pretendeUtilizar: ChartItem[];
     motivoNaoUtilizar: ChartItem[];
   };
+  topFaltaMercado: {
+    totalRespostas: number;
+    top: Array<ChartItem & { exemplo?: string | null }>;
+  };
+  topInfluenciadores: {
+    totalRespostas: number;
+    top: ChartItem[];
+  };
   respostasAbertas: Array<{
     id: number;
     faltaMercado?: string;

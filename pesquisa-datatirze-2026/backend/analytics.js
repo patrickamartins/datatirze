@@ -37,6 +37,190 @@ function marcaLabel(id) {
   return MARCAS_LABELS[id] || id || "Não informado";
 }
 
+function stripAccents(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeOpenText(value) {
+  return stripAccents(String(value || "").toLowerCase())
+    .replace(/[“”"']/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const FALTA_THEMES = [
+  {
+    id: "preco",
+    label: "Preço mais acessível",
+    keywords: ["preco", "barato", "barata", "custo", "caro", "acessivel", "valor", "desconto", "mais barato"],
+  },
+  {
+    id: "disponibilidade",
+    label: "Maior disponibilidade / estoque",
+    keywords: ["disponib", "estoque", "falta na farmacia", "encontrar", "desabastec", "em falta", "conseguir comprar"],
+  },
+  {
+    id: "qualidade",
+    label: "Mais qualidade e procedência",
+    keywords: ["qualidade", "procedencia", "confiavel", "pureza", "seguranca do produto", "certific"],
+  },
+  {
+    id: "informacao",
+    label: "Mais informação e orientação",
+    keywords: ["informac", "orientac", "educac", "clareza", "conteudo", "duvida", "explic"],
+  },
+  {
+    id: "regulamentacao",
+    label: "Regulamentação / fiscalização",
+    keywords: ["anvisa", "regulament", "fiscaliz", "legaliz", "legislac", "controle"],
+  },
+  {
+    id: "manipulacao",
+    label: "Melhor oferta de manipulados",
+    keywords: ["manipul", "farmacia de manipulacao", "composto"],
+  },
+  {
+    id: "acompanhamento",
+    label: "Mais acompanhamento profissional",
+    keywords: ["acompanhamento", "medico", "nutri", "profissional", "suporte clinico"],
+  },
+  {
+    id: "efeitos",
+    label: "Menos efeitos / suporte a efeitos",
+    keywords: ["efeito colateral", "efeitos", "nausea", "vomito", "incomodo"],
+  },
+  {
+    id: "opcoes",
+    label: "Mais opções de marcas/doses",
+    keywords: ["mais opcoes", "variedade", "mais marcas", "dose", "dosagem", "apresentacao"],
+  },
+  {
+    id: "acesso",
+    label: "Mais acesso (SUS/planos)",
+    keywords: ["sus", "plano de saude", "convenio", "acesso", "cobertura"],
+  },
+];
+
+function countFaltaMercadoThemes(rows, limit = 5) {
+  const texts = rows
+    .map((r) => r.falta_mercado)
+    .filter((t) => typeof t === "string" && t.trim().length > 2);
+
+  const counts = {};
+  const examples = {};
+
+  for (const raw of texts) {
+    const normalized = normalizeOpenText(raw);
+    if (!normalized) continue;
+
+    for (const theme of FALTA_THEMES) {
+      const matched = theme.keywords.some((keyword) => normalized.includes(keyword));
+      if (!matched) continue;
+      counts[theme.id] = (counts[theme.id] || 0) + 1;
+      if (!examples[theme.id]) examples[theme.id] = raw.trim();
+    }
+  }
+
+  const phraseCounts = {};
+  for (const raw of texts) {
+    const key = normalizeOpenText(raw).slice(0, 120);
+    if (key.length < 8) continue;
+    if (!phraseCounts[key]) phraseCounts[key] = { name: raw.trim().slice(0, 90), total: 0 };
+    phraseCounts[key].total += 1;
+  }
+
+  const themeRanking = FALTA_THEMES.map((theme) => ({
+    name: theme.label,
+    total: counts[theme.id] || 0,
+    exemplo: examples[theme.id] || null,
+  }))
+    .filter((item) => item.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const repeatedPhrases = Object.values(phraseCounts)
+    .filter((item) => item.total >= 2)
+    .sort((a, b) => b.total - a.total);
+
+  const ranking = [...themeRanking];
+  for (const phrase of repeatedPhrases) {
+    if (ranking.length >= limit) break;
+    const already = ranking.some(
+      (item) => normalizeOpenText(item.name) === normalizeOpenText(phrase.name)
+    );
+    if (already) continue;
+    ranking.push({
+      name: phrase.name,
+      total: phrase.total,
+      exemplo: phrase.name,
+    });
+  }
+
+  return {
+    totalRespostas: texts.length,
+    top: ranking.slice(0, limit),
+  };
+}
+
+function extractInfluencerNames(raw) {
+  if (!raw || typeof raw !== "string") return [];
+
+  return raw
+    .split(/[,;/|]+|\se\s+|\s&\s+|\n+/i)
+    .map((part) =>
+      part
+        .replace(/@/g, "")
+        .replace(/\b(dr\.?|dra\.?|doutor|doutora)\b/gi, "")
+        .replace(/[()[\]{}]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    )
+    .filter((name) => {
+      if (!name) return false;
+      if (name.length < 2 || name.length > 60) return false;
+      const normalized = normalizeOpenText(name);
+      if (["nao", "nenhum", "nenhuma", "ns", "n/a", "na", "nao acompanho", "ninguem"].includes(normalized)) {
+        return false;
+      }
+      if (name.split(" ").length > 6) return false;
+      return /[a-zA-ZÀ-ÿ]/.test(name);
+    });
+}
+
+function countTopInfluenciadores(rows, limit = 10) {
+  const counts = {};
+  const displayNames = {};
+
+  for (const row of rows) {
+    const names = extractInfluencerNames(row.influenciadores);
+    const seenInRow = new Set();
+
+    for (const name of names) {
+      const key = normalizeOpenText(name);
+      if (!key || seenInRow.has(key)) continue;
+      seenInRow.add(key);
+      counts[key] = (counts[key] || 0) + 1;
+      if (!displayNames[key] || name.length < displayNames[key].length) {
+        displayNames[key] = name;
+      }
+    }
+  }
+
+  const top = Object.entries(counts)
+    .map(([key, total]) => ({
+      name: displayNames[key],
+      total,
+    }))
+    .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "pt-BR"))
+    .slice(0, limit);
+
+  return {
+    totalRespostas: rows.filter((r) => typeof r.influenciadores === "string" && r.influenciadores.trim()).length,
+    top,
+  };
+}
+
 function generateInsights(rows) {
   const insights = [];
   const total = rows.length;
@@ -217,6 +401,8 @@ function buildDashboardData(rows) {
       pretendeUtilizar: countByField(naoUtilizadores, "pretende_utilizar"),
       motivoNaoUtilizar: countByField(naoUtilizadores, "motivo_nao_utilizar"),
     },
+    topFaltaMercado: countFaltaMercadoThemes(rows, 5),
+    topInfluenciadores: countTopInfluenciadores(rows, 10),
     respostasAbertas: rows
       .filter((r) => r.falta_mercado || r.influenciadores || r.efeito_interrupcao || r.efeito_outro)
       .map((r) => ({
