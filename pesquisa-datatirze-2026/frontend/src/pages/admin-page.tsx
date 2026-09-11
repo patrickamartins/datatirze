@@ -213,13 +213,18 @@ export function AdminPage() {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Já utilizaram tirzepatida" value={data.utilizadores} />
           <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal} />
           <StatCard
             label="Sessões abandonadas"
             value={data.resumo?.sessoesAbandonadas ?? 0}
             sub={`${data.resumo?.sessoesAbandonadasComEmail ?? data.sessoesAbandonadas?.length ?? 0} com e-mail p/ mailing`}
+          />
+          <StatCard
+            label="Downloads do relatório"
+            value={data.resumo?.downloadsRelatorio ?? 0}
+            sub={`${data.resumo?.downloadsRelatorioEmailsUnicos ?? 0} e-mails únicos`}
           />
         </div>
 

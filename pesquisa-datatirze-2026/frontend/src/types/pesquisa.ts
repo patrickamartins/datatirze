@@ -83,6 +83,8 @@ export interface DashboardData {
     sessoesVazias?: number;
     sessoesEmAndamentoComDados?: number;
     janelaAtivaMinutos?: number;
+    downloadsRelatorio?: number;
+    downloadsRelatorioEmailsUnicos?: number;
     atualizadoEm?: string;
   };
   funilEtapas?: Array<{ step: number; label: string; total: number }>;

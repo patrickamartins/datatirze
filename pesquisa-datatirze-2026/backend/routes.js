@@ -628,7 +628,7 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
-      const [emAndamento, concluidas, comDados, abandonadas, funil, abandonadasDetalhe] = await Promise.all([
+      const [emAndamento, concluidas, comDados, abandonadas, funil, abandonadasDetalhe, downloadsRelatorio] = await Promise.all([
         pool.query(
           `SELECT
              COUNT(*)::int AS total,
@@ -690,6 +690,12 @@ function createPesquisaRouter(pool, bcrypt) {
           ORDER BY ps.updated_at DESC
           LIMIT 500
         `),
+        pool.query(`
+          SELECT
+            COUNT(*)::int AS total,
+            COUNT(DISTINCT lower(email))::int AS emails_unicos
+          FROM pesquisa_downloads
+        `),
       ]);
 
       // Um e-mail por linha (sessão mais recente)
@@ -725,6 +731,8 @@ function createPesquisaRouter(pool, bcrypt) {
         sessoesAbandonadas: abandonadas.rows[0].total,
         sessoesAbandonadasComEmail: sessoesAbandonadasLista.length,
         sessoesVazias: f.vazias,
+        downloadsRelatorio: downloadsRelatorio.rows[0].total,
+        downloadsRelatorioEmailsUnicos: downloadsRelatorio.rows[0].emails_unicos,
         atualizadoEm: new Date().toISOString(),
       };
       dashboard.funilEtapas = [
