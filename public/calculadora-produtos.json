@@ -1,0 +1,47 @@
+[
+  {
+    "id": "lipoland-4vial-15",
+    "nome": "Lipoland 4 Vial 15mg",
+    "fabricante": "Lander",
+    "subtitulo": "Tirzepatida 4 Vial 15mg",
+    "imagem": "/images/produtos/lipoland-4vial-15.svg",
+    "mgFrasco": 15,
+    "diluenteMl": 2
+  },
+  {
+    "id": "lipoless-md",
+    "nome": "Lipoless MD",
+    "fabricante": "Éticos",
+    "subtitulo": "Éticos",
+    "imagem": "/images/produtos/lipoless-md.svg",
+    "mgFrasco": 15,
+    "diluenteMl": 2
+  },
+  {
+    "id": "tg-15",
+    "nome": "T.G. 15mg",
+    "fabricante": "Indufar",
+    "subtitulo": "Tirzepatida 15 mg",
+    "imagem": "/images/produtos/tg-15.svg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tirzec-15",
+    "nome": "Tirzec 15mg",
+    "fabricante": "Quimfa",
+    "subtitulo": "Tirzepatida 15 mg",
+    "imagem": "/images/produtos/tirzec-15.svg",
+    "mgFrasco": 15,
+    "diluenteMl": 2
+  },
+  {
+    "id": "gluconex-15",
+    "nome": "Gluconex 15mg",
+    "fabricante": "Lasca",
+    "subtitulo": "Tirzepatida 15 mg",
+    "imagem": "/images/produtos/gluconex-15.svg",
+    "mgFrasco": 15,
+    "diluenteMl": 2
+  }
+]

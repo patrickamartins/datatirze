@@ -9,10 +9,17 @@
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/calculadora.css" />
 </head>
-<body class="calc-page">
+<body class="calc-page<%= typeof embed !== 'undefined' && embed ? ' calc-embed' : '' %>">
   <%- include("partials/gtm-body") %>
   <div class="container calc-container">
-    <%- include("partials/header") %>
+    <% if (typeof embed === 'undefined' || !embed) { %>
+      <%- include("partials/header") %>
+    <% } else { %>
+      <div class="calc-embed-brand">
+        <img src="/images/logo-datatirze.png" alt="DataTirze" class="calc-embed-logo" width="140" height="48" />
+        <a href="https://datatirze.com/calculadora" target="_blank" rel="noopener noreferrer">Abrir no DataTirze</a>
+      </div>
+    <% } %>
 
     <header class="calc-hero">
       <h1>Qual a Minha Dose?</h1>
@@ -24,12 +31,35 @@
 
     <div class="calc-layout">
       <section class="calc-steps" aria-label="Configuração da dose">
+        <article class="calc-step calc-step--product" data-step="produto">
+          <div class="calc-step-head">
+            <span class="calc-step-num calc-step-num--soft">P</span>
+            <div>
+              <h2>Produto</h2>
+              <p>Opcional — preenche mg do frasco e diluente automaticamente</p>
+            </div>
+          </div>
+
+          <label class="calc-field-label" for="product-select">PRODUTO</label>
+          <select id="product-select" class="calc-product-select">
+            <option value="">Selecionar manualmente (sem produto)</option>
+          </select>
+
+          <div id="product-card" class="calc-product-card" hidden>
+            <img id="product-image" class="calc-product-image" src="" alt="" width="64" height="64" />
+            <div class="calc-product-info">
+              <strong id="product-name"></strong>
+              <span id="product-subtitle"></span>
+            </div>
+          </div>
+        </article>
+
         <article class="calc-step" data-step="1">
           <div class="calc-step-head">
             <span class="calc-step-num">1</span>
             <div>
               <h2>Conteúdo do frasco</h2>
-              <p>Massa do medicamento liofilizado</p>
+              <p>Massa do medicamento liofilizado (MG DO FRASCO)</p>
             </div>
           </div>
           <div class="calc-options" id="mass-options" role="group" aria-label="Massa do frasco"></div>
@@ -44,7 +74,7 @@
             <span class="calc-step-num">2</span>
             <div>
               <h2>Volume de diluente</h2>
-              <p>Água bacteriostática / estéril / NaCl</p>
+              <p>Água bacteriostática / estéril / NaCl (DILUENTE ML)</p>
             </div>
           </div>
           <div class="calc-options" id="diluent-options" role="group" aria-label="Volume de diluente"></div>
@@ -94,22 +124,14 @@
                   <stop offset="100%" stop-color="#e8eef8"/>
                 </linearGradient>
               </defs>
-              <!-- needle -->
               <rect x="57" y="8" width="6" height="28" rx="2" fill="#94a3b8"/>
-              <!-- hub -->
               <rect x="42" y="34" width="36" height="16" rx="3" fill="#64748b"/>
-              <!-- barrel -->
               <rect x="38" y="50" width="44" height="300" rx="8" fill="url(#barrelGrad)" stroke="#94a3b8" stroke-width="2"/>
-              <!-- liquid fill -->
               <rect id="syringe-fill" x="40" y="348" width="40" height="0" fill="#3b82f6" opacity="0.55"/>
-              <!-- tick marks group -->
               <g id="syringe-ticks"></g>
-              <!-- plunger line -->
               <line id="syringe-plunger" x1="36" y1="348" x2="84" y2="348" stroke="#1d4ed8" stroke-width="3" stroke-linecap="round"/>
-              <!-- plunger rod -->
               <rect id="syringe-rod" x="54" y="348" width="12" height="50" rx="2" fill="#475569"/>
               <rect id="syringe-flange" x="40" y="392" width="40" height="10" rx="2" fill="#334155"/>
-              <!-- unit label -->
               <text id="syringe-label" x="98" y="352" font-size="14" font-weight="700" fill="#1d4ed8">0</text>
             </svg>
           </div>
@@ -164,6 +186,26 @@
         </p>
       </aside>
     </div>
+
+    <% if (typeof embed === 'undefined' || !embed) { %>
+    <section class="calc-embed-section" aria-labelledby="calc-embed-title">
+      <h2 id="calc-embed-title">Incorporar no seu site</h2>
+      <p>
+        Use um <strong>iframe</strong> (recomendado): isola o CSS, funciona em qualquer site e atualiza sozinho
+        quando melhorarmos a calculadora. Copie o código abaixo:
+      </p>
+      <pre class="calc-embed-code" id="calc-embed-code"><code>&lt;iframe
+  src="https://datatirze.com/calculadora/embed"
+  title="Calculadora Qual a Minha Dose — DataTirze"
+  width="100%"
+  height="980"
+  style="border:0;border-radius:16px;max-width:1120px;"
+  loading="lazy"
+  referrerpolicy="no-referrer-when-downgrade"
+&gt;&lt;/iframe&gt;</code></pre>
+      <button type="button" class="calc-btn calc-btn--primary" id="btn-copy-embed">Copiar código</button>
+    </section>
+    <% } %>
   </div>
 
   <div class="calc-sticky-bar" id="calc-sticky-bar" hidden>
@@ -194,7 +236,9 @@
     </div>
   </div>
 
-  <%- include("partials/footer") %>
+  <% if (typeof embed === 'undefined' || !embed) { %>
+    <%- include("partials/footer") %>
+  <% } %>
   <script src="/calculadora.js" defer></script>
 </body>
 </html>

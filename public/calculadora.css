@@ -857,7 +857,8 @@ body.calc-modal-open {
   .calc-actions,
   .calc-disclaimer,
   .calc-help-btn,
-  .calc-modal {
+  .calc-modal,
+  .calc-embed-section {
     display: none !important;
   }
 
@@ -873,4 +874,144 @@ body.calc-modal-open {
     box-shadow: none;
     border: 1px solid #ccc;
   }
+}
+
+/* Produto */
+.calc-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.calc-product-select {
+  width: 100%;
+  appearance: none;
+  border: 1.5px solid #f59e0b;
+  border-radius: 12px;
+  padding: 12px 40px 12px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #19224a;
+  background:
+    #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 14px center;
+  cursor: pointer;
+}
+
+.calc-product-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.calc-product-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f1f5f9;
+}
+
+.calc-product-image {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.calc-product-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calc-product-info strong {
+  font-size: 0.95rem;
+  color: #19224a;
+}
+
+.calc-product-info span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.calc-step-num--soft {
+  background: #64748b;
+}
+
+/* Embed */
+.calc-embed {
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.calc-embed .calc-container {
+  padding-top: 12px;
+  padding-bottom: 24px;
+}
+
+.calc-embed-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.calc-embed-logo {
+  height: 48px;
+  width: auto;
+}
+
+.calc-embed-brand a {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.calc-embed-section {
+  margin: 36px 0 24px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.calc-embed-section h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: #19224a;
+}
+
+.calc-embed-section p {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.calc-embed-code {
+  margin: 0 0 14px;
+  padding: 14px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.calc-embed-code code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
 }

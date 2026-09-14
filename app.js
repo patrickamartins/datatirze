@@ -463,7 +463,11 @@ app.get("/reportar", (req, res) => {
 
 app.get("/termos", (req, res) => res.render("termos"));
 app.get("/privacidade", (req, res) => res.render("privacidade"));
-app.get("/calculadora", (req, res) => res.render("calculadora"));
+app.get("/calculadora", (req, res) => res.render("calculadora", { embed: false }));
+app.get("/calculadora/embed", (req, res) => {
+  res.setHeader("Content-Security-Policy", "frame-ancestors *");
+  res.render("calculadora", { embed: true, hideHeaderActions: true });
+});
 
 function normalizeEmailLead(email) {
   if (!email || typeof email !== "string") return null;

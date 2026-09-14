@@ -10,7 +10,10 @@
     { id: "10", label: "1 mL", units: 100, ml: 1 },
   ];
 
+  var products = [];
+
   var state = {
+    productId: "",
     mass: 15,
     massCustom: false,
     diluent: 0.5,
@@ -21,6 +24,11 @@
   };
 
   var els = {
+    productSelect: document.getElementById("product-select"),
+    productCard: document.getElementById("product-card"),
+    productImage: document.getElementById("product-image"),
+    productName: document.getElementById("product-name"),
+    productSubtitle: document.getElementById("product-subtitle"),
     massOptions: document.getElementById("mass-options"),
     diluentOptions: document.getElementById("diluent-options"),
     doseOptions: document.getElementById("dose-options"),
@@ -50,6 +58,8 @@
     btnWhatsapp: document.getElementById("btn-whatsapp"),
     btnPrint: document.getElementById("btn-print"),
     btnReset: document.getElementById("btn-reset"),
+    btnCopyEmbed: document.getElementById("btn-copy-embed"),
+    embedCode: document.getElementById("calc-embed-code"),
   };
 
   function formatMg(value) {
@@ -107,6 +117,43 @@
     return state.dose;
   }
 
+  function getSelectedProduct() {
+    if (!state.productId) return null;
+    return products.find(function (p) {
+      return p.id === state.productId;
+    }) || null;
+  }
+
+  function applyMassValue(value) {
+    var numeric = Number(value);
+    if (!isFinite(numeric) || numeric <= 0) return;
+    if (MASS_OPTIONS.indexOf(numeric) !== -1) {
+      state.mass = numeric;
+      state.massCustom = false;
+      els.massCustom.hidden = true;
+      els.massCustomInput.value = "";
+    } else {
+      state.massCustom = true;
+      els.massCustom.hidden = false;
+      els.massCustomInput.value = String(numeric);
+    }
+  }
+
+  function applyDiluentValue(value) {
+    var numeric = Number(value);
+    if (!isFinite(numeric) || numeric <= 0) return;
+    if (DILUENT_OPTIONS.indexOf(numeric) !== -1) {
+      state.diluent = numeric;
+      state.diluentCustom = false;
+      els.diluentCustom.hidden = true;
+      els.diluentCustomInput.value = "";
+    } else {
+      state.diluentCustom = true;
+      els.diluentCustom.hidden = false;
+      els.diluentCustomInput.value = String(numeric);
+    }
+  }
+
   function calculate(mass, diluent, dose, syringe) {
     if (!mass || !diluent || !dose || !syringe) return null;
     var concentration = mass / diluent;
@@ -161,6 +208,55 @@
       });
       els.syringeOptions.appendChild(btn);
     });
+  }
+
+  function populateProductSelect() {
+    if (!els.productSelect) return;
+    var current = els.productSelect.value;
+    els.productSelect.innerHTML = "";
+    var empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "Selecionar manualmente (sem produto)";
+    els.productSelect.appendChild(empty);
+
+    products.forEach(function (product) {
+      var option = document.createElement("option");
+      option.value = product.id;
+      option.textContent = product.nome;
+      els.productSelect.appendChild(option);
+    });
+
+    els.productSelect.value = current || state.productId || "";
+  }
+
+  function updateProductCard() {
+    if (!els.productCard) return;
+    var product = getSelectedProduct();
+    if (!product) {
+      els.productCard.hidden = true;
+      return;
+    }
+
+    els.productCard.hidden = false;
+    els.productImage.src = product.imagem;
+    els.productImage.alt = product.nome;
+    els.productName.textContent = product.nome;
+    els.productSubtitle.textContent =
+      product.subtitulo ||
+      [product.fabricante, product.mgFrasco ? "Tirzepatida " + product.mgFrasco + "mg" : ""]
+        .filter(Boolean)
+        .join(" · ");
+  }
+
+  function applyProduct(productId) {
+    state.productId = productId || "";
+    var product = getSelectedProduct();
+    if (product) {
+      applyMassValue(product.mgFrasco);
+      applyDiluentValue(product.diluenteMl);
+    }
+    updateProductCard();
+    render();
   }
 
   function drawTicks(maxUnits) {
@@ -249,8 +345,12 @@
   }
 
   function buildSummaryText(mass, diluent, dose, syringe, result) {
-    return [
-      "Qual a Minha Dose? — DataTirze",
+    var product = getSelectedProduct();
+    var lines = ["Qual a Minha Dose? — DataTirze"];
+    if (product) {
+      lines.push("Produto: " + product.nome + (product.fabricante ? " (" + product.fabricante + ")" : ""));
+    }
+    lines.push(
       "Frasco: " + formatMg(mass),
       "Diluente: " + diluent + " mL",
       "Seringa: " + syringe.label + " (" + syringe.units + " UI)",
@@ -262,8 +362,9 @@
       "",
       "Calcule a sua dose também: " + calculatorUrl(),
       "",
-      "Ferramenta informativa. Não substitui orientação profissional.",
-    ].join("\n");
+      "Ferramenta informativa. Não substitui orientação profissional."
+    );
+    return lines.join("\n");
   }
 
   function render() {
@@ -328,6 +429,7 @@
     );
 
     buildSyringes();
+    updateProductCard();
 
     var mass = getMass();
     var diluent = getDiluent();
@@ -398,6 +500,12 @@
   els.diluentCustomInput.addEventListener("input", render);
   els.doseCustomInput.addEventListener("input", render);
 
+  if (els.productSelect) {
+    els.productSelect.addEventListener("change", function () {
+      applyProduct(els.productSelect.value);
+    });
+  }
+
   els.btnCopy.addEventListener("click", function () {
     var text = els.btnCopy.dataset.summary || "";
     if (!text) return;
@@ -411,12 +519,26 @@
     }
   });
 
+  if (els.btnCopyEmbed && els.embedCode) {
+    els.btnCopyEmbed.addEventListener("click", function () {
+      var text = els.embedCode.textContent || "";
+      if (!text || !navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(function () {
+        els.btnCopyEmbed.textContent = "Código copiado!";
+        setTimeout(function () {
+          els.btnCopyEmbed.textContent = "Copiar código";
+        }, 1600);
+      });
+    });
+  }
+
   els.btnPrint.addEventListener("click", function () {
     window.print();
   });
 
   els.btnReset.addEventListener("click", function () {
     state = {
+      productId: "",
       mass: 15,
       massCustom: false,
       diluent: 0.5,
@@ -425,12 +547,14 @@
       dose: 2.5,
       doseCustom: false,
     };
+    if (els.productSelect) els.productSelect.value = "";
     els.massCustom.hidden = true;
     els.diluentCustom.hidden = true;
     els.doseCustom.hidden = true;
     els.massCustomInput.value = "";
     els.diluentCustomInput.value = "";
     els.doseCustomInput.value = "";
+    updateProductCard();
     render();
   });
 
@@ -463,5 +587,19 @@
     }
   });
 
-  render();
+  fetch("/calculadora-produtos.json", { cache: "no-store" })
+    .then(function (response) {
+      if (!response.ok) throw new Error("Falha ao carregar produtos");
+      return response.json();
+    })
+    .then(function (data) {
+      products = Array.isArray(data) ? data : [];
+      populateProductSelect();
+      render();
+    })
+    .catch(function () {
+      products = [];
+      populateProductSelect();
+      render();
+    });
 })();
