@@ -1,47 +1,155 @@
 [
   {
-    "id": "lipoland-4vial-15",
-    "nome": "Lipoland 4 Vial 15mg",
-    "fabricante": "Lander",
-    "subtitulo": "Tirzepatida 4 Vial 15mg",
-    "imagem": "/images/produtos/lipoland-4vial-15.svg",
-    "mgFrasco": 15,
-    "diluenteMl": 2
-  },
-  {
-    "id": "lipoless-md",
-    "nome": "Lipoless MD",
+    "id": "lipoless-15-4amp",
+    "nome": "Lipoless 15mg 4 Ampolas",
     "fabricante": "Éticos",
-    "subtitulo": "Éticos",
-    "imagem": "/images/produtos/lipoless-md.svg",
-    "mgFrasco": 15,
-    "diluenteMl": 2
-  },
-  {
-    "id": "tg-15",
-    "nome": "T.G. 15mg",
-    "fabricante": "Indufar",
-    "subtitulo": "Tirzepatida 15 mg",
-    "imagem": "/images/produtos/tg-15.svg",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/lipoless-15-4amp.jpg",
     "mgFrasco": 15,
     "diluenteMl": 0.5
   },
   {
-    "id": "tirzec-15",
-    "nome": "Tirzec 15mg",
-    "fabricante": "Quimfa",
-    "subtitulo": "Tirzepatida 15 mg",
-    "imagem": "/images/produtos/tirzec-15.svg",
+    "id": "lipoless-15-md",
+    "nome": "Lipoless 15mg MD",
+    "fabricante": "Éticos",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/lipoless-15-md.webp",
     "mgFrasco": 15,
-    "diluenteMl": 2
+    "diluenteMl": 0.6
   },
   {
-    "id": "gluconex-15",
-    "nome": "Gluconex 15mg",
-    "fabricante": "Lasca",
-    "subtitulo": "Tirzepatida 15 mg",
-    "imagem": "/images/produtos/gluconex-15.svg",
+    "id": "lipoland-15-md",
+    "nome": "Lipoland 15mg MD",
+    "fabricante": "Landerlan",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/lipoland-15-md.webp",
     "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "lipoland-15-4amp",
+    "nome": "Lipoland 15mg 4 Ampolas",
+    "fabricante": "Landerlan",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/lipoland-15-4amp.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tg-15-4amp",
+    "nome": "TG 15mg 4 Ampolas",
+    "fabricante": "Indufar",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/tg-15-4amp.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tirzedral-15-4amp",
+    "nome": "Tirzedral 15mg 4 Ampolas",
+    "fabricante": "Catedral",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/tirzedral-15-4amp.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tirzedral-15-md",
+    "nome": "Tirzedral 15mg MD",
+    "fabricante": "Catedral",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/tirzedral-15-md.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 0.6
+  },
+  {
+    "id": "t36-15-4amp",
+    "nome": "T36 15mg 4 Ampolas",
+    "fabricante": "Catedral",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/t36-15-md.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "t36-15-md",
+    "nome": "T36 15mg MD",
+    "fabricante": "Catedral",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/t36-15-md.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.6
+  },
+  {
+    "id": "tirzec-15-4amp",
+    "nome": "Tirzec 15mg 4 Ampolas",
+    "fabricante": "Quimfa",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/tirzec-15-4amp.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tirzec-15-md",
+    "nome": "Tirzec 15mg MD",
+    "fabricante": "Quimfa",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/tirzec-15-md.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "gluconex-15-4amp",
+    "nome": "Gluconex 15mg 4 Ampolas",
+    "fabricante": "Lasca",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/gluconex-15-4amp.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 1
+  },
+  {
+    "id": "tnl-15-4amp",
+    "nome": "TNL 15mg 4 Ampolas",
+    "fabricante": "TNL",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/tnl-15-4amp.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "tnl-15-md",
+    "nome": "TNL 15mg MD",
+    "fabricante": "TNL",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/tnl-15-md.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "slimex-15-md",
+    "nome": "Slimex 15mg MD",
+    "fabricante": "Desconhecido",
+    "subtitulo": "1 Ampola de 60mg na caixa",
+    "imagem": "/images/produtos/slimex-15-md.jpg",
+    "mgFrasco": 15,
+    "diluenteMl": 0.6
+  },
+  {
+    "id": "slimex-15-4amp",
+    "nome": "Slimex 15mg 4 Ampolas",
+    "fabricante": "Desconhecido",
+    "subtitulo": "4 Ampolas de 15mg totalizando 60mg na caixa",
+    "imagem": "/images/produtos/slimex-15-4amp.webp",
+    "mgFrasco": 15,
+    "diluenteMl": 0.5
+  },
+  {
+    "id": "zphc-150-5amp",
+    "nome": "ZPHC 150mg 5 Ampolas",
+    "fabricante": "ZPHC",
+    "subtitulo": "5 Ampolas de 30mg totalizando 150mg na caixa",
+    "imagem": "/images/produtos/zphc-150-5amp.jpg",
+    "mgFrasco": 30,
     "diluenteMl": 2
   }
 ]
