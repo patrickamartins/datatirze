@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  var MASS_OPTIONS = [5, 10, 15, 20, 30, 60];
-  var DILUENT_OPTIONS = [0.5, 0.6, 1, 1.5, 2, 2.5, 3];
+  var MASS_OPTIONS = [5, 10, 11.6, 15, 20, 30, 60];
+  var DILUENT_OPTIONS = [0.5, 0.6, 1, 1.3, 1.5, 2, 2.5, 3];
   var DOSE_OPTIONS = [0.25, 0.5, 1, 1.7, 2, 2.4, 2.5, 4, 5, 7.5, 10, 12, 12.5, 15];
   var SYRINGES = [
     { id: "03", label: ".3 mL", units: 30, ml: 0.3 },
@@ -234,6 +234,12 @@
     var product = getSelectedProduct();
     if (!product) {
       els.productCard.hidden = true;
+      if (els.productImage) {
+        els.productImage.removeAttribute("src");
+        els.productImage.alt = "";
+      }
+      if (els.productName) els.productName.textContent = "";
+      if (els.productSubtitle) els.productSubtitle.textContent = "";
       return;
     }
 
@@ -243,7 +249,7 @@
     els.productName.textContent = product.nome;
     els.productSubtitle.textContent =
       product.subtitulo ||
-      [product.fabricante, product.mgFrasco ? "Tirzepatida " + product.mgFrasco + "mg" : ""]
+      [product.fabricante, product.mgFrasco ? product.mgFrasco + "mg" : ""]
         .filter(Boolean)
         .join(" · ");
   }

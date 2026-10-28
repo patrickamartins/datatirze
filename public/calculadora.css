@@ -918,6 +918,10 @@ body.calc-modal-open {
   background: #f1f5f9;
 }
 
+.calc-product-card[hidden] {
+  display: none !important;
+}
+
 .calc-product-image {
   width: 64px;
   height: 64px;

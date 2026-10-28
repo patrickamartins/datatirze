@@ -151,5 +151,14 @@
     "imagem": "/images/produtos/zphc-150-5amp.jpg",
     "mgFrasco": 30,
     "diluenteMl": 2
+  },
+  {
+    "id": "peptigen-tesamorelin-11-6-md",
+    "nome": "Tesamorelin Peptigen Éticos",
+    "fabricante": "Éticos",
+    "subtitulo": "Vial Multidosis 11,6mg — diluição 1,3ml",
+    "imagem": "/images/produtos/peptigen-tesamorelin-11-6-md.jpg",
+    "mgFrasco": 11.6,
+    "diluenteMl": 1.3
   }
 ]
