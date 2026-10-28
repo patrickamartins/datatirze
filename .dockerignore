@@ -1,0 +1,10 @@
+node_modules
+pesquisa-datatirze-2026/frontend/node_modules
+.git
+.env
+*.tsbuildinfo
+.DS_Store
+database.sqlite
+npm-debug.log*
+.cursor
+agent-transcripts

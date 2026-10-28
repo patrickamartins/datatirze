@@ -918,7 +918,8 @@ body.calc-modal-open {
   background: #f1f5f9;
 }
 
-.calc-product-card[hidden] {
+.calc-product-card[hidden],
+.calc-product-card.is-empty {
   display: none !important;
 }
 

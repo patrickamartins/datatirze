@@ -124,11 +124,21 @@
     }) || null;
   }
 
+  function findOptionValue(options, value) {
+    var numeric = Number(value);
+    if (!isFinite(numeric) || numeric <= 0) return null;
+    for (var i = 0; i < options.length; i += 1) {
+      if (Math.abs(options[i] - numeric) < 0.0001) return options[i];
+    }
+    return null;
+  }
+
   function applyMassValue(value) {
+    var matched = findOptionValue(MASS_OPTIONS, value);
     var numeric = Number(value);
     if (!isFinite(numeric) || numeric <= 0) return;
-    if (MASS_OPTIONS.indexOf(numeric) !== -1) {
-      state.mass = numeric;
+    if (matched != null) {
+      state.mass = matched;
       state.massCustom = false;
       els.massCustom.hidden = true;
       els.massCustomInput.value = "";
@@ -140,10 +150,11 @@
   }
 
   function applyDiluentValue(value) {
+    var matched = findOptionValue(DILUENT_OPTIONS, value);
     var numeric = Number(value);
     if (!isFinite(numeric) || numeric <= 0) return;
-    if (DILUENT_OPTIONS.indexOf(numeric) !== -1) {
-      state.diluent = numeric;
+    if (matched != null) {
+      state.diluent = matched;
       state.diluentCustom = false;
       els.diluentCustom.hidden = true;
       els.diluentCustomInput.value = "";
@@ -234,6 +245,7 @@
     var product = getSelectedProduct();
     if (!product) {
       els.productCard.hidden = true;
+      els.productCard.classList.add("is-empty");
       if (els.productImage) {
         els.productImage.removeAttribute("src");
         els.productImage.alt = "";
@@ -244,6 +256,7 @@
     }
 
     els.productCard.hidden = false;
+    els.productCard.classList.remove("is-empty");
     els.productImage.src = product.imagem;
     els.productImage.alt = product.nome;
     els.productName.textContent = product.nome;
