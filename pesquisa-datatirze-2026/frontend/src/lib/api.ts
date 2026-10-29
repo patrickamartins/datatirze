@@ -23,32 +23,40 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
-export function fetchConfig(): Promise<PesquisaConfig> {
-  return request<PesquisaConfig>(`${API_BASE}/config`);
+export function fetchConfig<TConfig = PesquisaConfig>(): Promise<TConfig> {
+  return request<TConfig>(`${API_BASE}/config`);
 }
 
-export function createSession(): Promise<SessaoResponse> {
-  return request<SessaoResponse>(`${API_BASE}/sessao`, { method: "POST" });
+/** `edicao` é enviado no corpo apenas quando informado (Edição 2 usa `edicao: 2`). */
+export function createSession<TRespostas = PesquisaRespostas>(
+  edicao?: number
+): Promise<SessaoResponse<TRespostas>> {
+  return request<SessaoResponse<TRespostas>>(`${API_BASE}/sessao`, {
+    method: "POST",
+    ...(edicao !== undefined ? { body: JSON.stringify({ edicao }) } : {}),
+  });
 }
 
-export function fetchSession(token: string): Promise<SessaoResponse> {
-  return request<SessaoResponse>(`${API_BASE}/sessao/${token}`);
+export function fetchSession<TRespostas = PesquisaRespostas>(
+  token: string
+): Promise<SessaoResponse<TRespostas>> {
+  return request<SessaoResponse<TRespostas>>(`${API_BASE}/sessao/${token}`);
 }
 
-export function saveSession(
+export function saveSession<TRespostas = PesquisaRespostas>(
   token: string,
-  data: { currentStep: number; respostas: PesquisaRespostas; status?: string }
-): Promise<SessaoResponse> {
-  return request<SessaoResponse>(`${API_BASE}/sessao/${token}`, {
+  data: { currentStep: number; respostas: TRespostas; status?: string }
+): Promise<SessaoResponse<TRespostas>> {
+  return request<SessaoResponse<TRespostas>>(`${API_BASE}/sessao/${token}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function completeSession(
+export function completeSession<TRespostas = PesquisaRespostas>(
   token: string,
-  respostas: PesquisaRespostas
-): Promise<{ success: boolean; respostas: PesquisaRespostas }> {
+  respostas: TRespostas
+): Promise<{ success: boolean; respostas: TRespostas }> {
   return request(`${API_BASE}/sessao/${token}/concluir`, {
     method: "POST",
     body: JSON.stringify({ respostas }),

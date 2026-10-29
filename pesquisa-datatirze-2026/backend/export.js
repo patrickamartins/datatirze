@@ -2,8 +2,10 @@ const { MARCAS_LABELS } = require("./constants");
 
 const CSV_COLUMNS = [
   { key: "id", label: "ID" },
+  { key: "edicao", label: "Edição" },
   { key: "session_token", label: "Sessão" },
   { key: "created_at", label: "Data" },
+  { key: "concluida", label: "Concluída" },
   { key: "email", label: "E-mail" },
   { key: "idade", label: "Idade" },
   { key: "genero", label: "Gênero" },
@@ -11,7 +13,11 @@ const CSV_COLUMNS = [
   { key: "cidade", label: "Cidade" },
   { key: "escolaridade", label: "Escolaridade" },
   { key: "faixa_renda", label: "Faixa de Renda" },
-  { key: "utilizou_tirzepatida", label: "Utilizou Tirzepatida" },
+  { key: "situacao_uso", label: "Situação de Uso" },
+  { key: "farmacia_confianca", label: "Farmácia Confiável" },
+  { key: "farmacia_ultima", label: "Farmácia Última Compra" },
+  { key: "tipo_fornecedor", label: "Tipo de Fornecedor" },
+  { key: "utilizou_tirzepatida", label: "Utilizou Queridinhas/Tirzepatida" },
   { key: "pretende_utilizar", label: "Pretende Utilizar" },
   { key: "motivo_nao_utilizar", label: "Motivo Não Utilizar" },
   { key: "preco_justo_nao_usuario", label: "Preço Justo (Não Usuário)" },

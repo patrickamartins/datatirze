@@ -1,7 +1,17 @@
 const express = require("express");
 const crypto = require("crypto");
 const { MARCAS, DOSES, ESTADOS_BR, OPCOES, TOTAL_STEPS } = require("./constants");
+const {
+  EDICAO_ATIVA,
+  EDICOES,
+  MARCAS_E2,
+  FARMACIAS_E2,
+  PEPTIDEOS_E2,
+  OPCOES_E2,
+  STEP_META_E2,
+} = require("./editions");
 const { buildDashboardData } = require("./analytics");
+const { buildEdition2Dashboard, buildEditionComparison } = require("./analytics-e2");
 const { rowsToCsv, rowsToExcelBuffer } = require("./export");
 const { repairPesquisaRespostas, ACTIVE_WINDOW_MINUTES } = require("./repair");
 
@@ -31,14 +41,29 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function parseEdicaoFilter(raw) {
+  if (raw == null || raw === "" || raw === "all") return null;
+  if (raw === "compare") return "compare";
+  const n = Number(raw);
+  if (n === 1 || n === 2) return n;
+  return EDICAO_ATIVA;
+}
+
 function buildFilterQuery(query, { onlyCompleted = true } = {}) {
-  const { estado, marca, dataInicio, dataFim } = query;
+  const { estado, marca, dataInicio, dataFim, edicao, situacaoUso, idade, genero, faixaRenda, tipoFornecedor } = query;
   const conditions = [];
   const params = [];
 
   if (onlyCompleted) {
     conditions.push("concluida = TRUE");
   }
+
+  const edicaoFiltro = parseEdicaoFilter(edicao);
+  if (typeof edicaoFiltro === "number") {
+    params.push(edicaoFiltro);
+    conditions.push(`edicao = $${params.length}`);
+  }
+
   if (estado) {
     params.push(estado);
     conditions.push(`estado = $${params.length}`);
@@ -46,6 +71,26 @@ function buildFilterQuery(query, { onlyCompleted = true } = {}) {
   if (marca) {
     params.push(marca);
     conditions.push(`marca_atual = $${params.length}`);
+  }
+  if (situacaoUso) {
+    params.push(situacaoUso);
+    conditions.push(`situacao_uso = $${params.length}`);
+  }
+  if (idade) {
+    params.push(idade);
+    conditions.push(`idade = $${params.length}`);
+  }
+  if (genero) {
+    params.push(genero);
+    conditions.push(`genero = $${params.length}`);
+  }
+  if (faixaRenda) {
+    params.push(faixaRenda);
+    conditions.push(`faixa_renda = $${params.length}`);
+  }
+  if (tipoFornecedor) {
+    params.push(tipoFornecedor);
+    conditions.push(`tipo_fornecedor = $${params.length}`);
   }
   if (dataInicio) {
     params.push(dataInicio);
@@ -57,7 +102,7 @@ function buildFilterQuery(query, { onlyCompleted = true } = {}) {
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  return { where, params };
+  return { where, params, edicaoFiltro };
 }
 
 function requirePesquisaAdmin(req, res, next) {
@@ -76,24 +121,17 @@ function requirePesquisaAdmin(req, res, next) {
 function createPesquisaRouter(pool, bcrypt) {
   const router = express.Router();
 
-  router.use((req, res, next) => {
-    if (req.path.startsWith("/admin")) return next();
-    return res.status(410).json({
-      error: "A Pesquisa Nacional 2026 foi encerrada. Obrigado pela participação.",
-      code: "SURVEY_CLOSED",
-    });
-  });
-
-  // E-mail só conta como participante se a pesquisa foi concluída
-  async function emailJaUtilizado(email, sessionToken) {
+  // E-mail só conta como participante se a pesquisa foi concluída (por edição)
+  async function emailJaUtilizado(email, sessionToken, edicao = 1) {
     const result = await pool.query(
       `SELECT pr.id
        FROM pesquisa_respostas pr
        WHERE lower(pr.email) = $1
          AND pr.session_token::text <> $2
          AND pr.concluida = TRUE
+         AND pr.edicao = $3
        LIMIT 1`,
-      [email, sessionToken]
+      [email, sessionToken, edicao]
     );
     return result.rows.length > 0;
   }
@@ -160,20 +198,39 @@ function createPesquisaRouter(pool, bcrypt) {
     );
   }
 
-  function mapRespostasToRow(sessionToken, sessionId, respostas, concluida = false) {
+  function mapRespostasToRow(sessionToken, sessionId, respostas, concluida = false, edicao = EDICAO_ATIVA) {
     const r = respostas || {};
+    const situacao = r.situacaoUso || null;
+    const utilizouFromSituacao =
+      situacao === "atual" || situacao === "ex"
+        ? true
+        : situacao === "interesse" || situacao === "sem_interesse"
+          ? false
+          : null;
+
     return {
       session_id: sessionId,
       session_token: sessionToken,
+      edicao: Number(edicao) || EDICAO_ATIVA,
       email: normalizeEmail(r.email),
       concluida: Boolean(concluida),
+      situacao_uso: situacao,
+      farmacia_confianca: r.farmaciaConfianca || null,
+      farmacia_ultima: r.farmaciaUltima || null,
+      tipo_fornecedor: r.tipoFornecedor || null,
+      shuffle_seed: r.shuffleSeed || null,
       idade: r.idade || null,
       genero: r.genero || null,
       estado: r.estado || null,
       cidade: r.cidade || null,
       escolaridade: r.escolaridade || null,
       faixa_renda: r.faixaRenda || null,
-      utilizou_tirzepatida: r.utilizouTirzepatida === true ? true : r.utilizouTirzepatida === false ? false : null,
+      utilizou_tirzepatida:
+        r.utilizouTirzepatida === true
+          ? true
+          : r.utilizouTirzepatida === false
+            ? false
+            : utilizouFromSituacao,
       pretende_utilizar: r.pretendeUtilizar || null,
       motivo_nao_utilizar: r.motivoNaoUtilizar || null,
       preco_justo_nao_usuario: r.precoJustoNaoUsuario || null,
@@ -222,14 +279,21 @@ function createPesquisaRouter(pool, bcrypt) {
     };
   }
 
-  async function upsertResposta(sessionToken, sessionId, respostas, concluida = false) {
+  async function upsertResposta(sessionToken, sessionId, respostas, concluida = false, edicao = EDICAO_ATIVA) {
     const existing = await pool.query(
-      "SELECT id, concluida FROM pesquisa_respostas WHERE session_token = $1",
+      "SELECT id, concluida, edicao FROM pesquisa_respostas WHERE session_token = $1",
       [sessionToken]
     );
 
     const keepCompleted = existing.rows[0]?.concluida === true;
-    const row = mapRespostasToRow(sessionToken, sessionId, respostas, keepCompleted || concluida);
+    const edicaoFinal = existing.rows[0]?.edicao || edicao || EDICAO_ATIVA;
+    const row = mapRespostasToRow(
+      sessionToken,
+      sessionId,
+      respostas,
+      keepCompleted || concluida,
+      edicaoFinal
+    );
 
     if (existing.rows.length > 0) {
       const fields = Object.keys(row).filter((k) => k !== "session_token" && k !== "session_id");
@@ -253,11 +317,20 @@ function createPesquisaRouter(pool, bcrypt) {
 
   router.get("/config", (_req, res) => {
     res.json({
+      edicao: EDICAO_ATIVA,
+      edicoes: EDICOES,
       marcas: MARCAS,
+      marcasE2: MARCAS_E2,
       doses: DOSES,
       estados: ESTADOS_BR,
       opcoes: OPCOES,
-      totalSteps: TOTAL_STEPS,
+      opcoesE2: OPCOES_E2,
+      farmacias: FARMACIAS_E2,
+      peptideos: PEPTIDEOS_E2,
+      stepMeta: STEP_META_E2,
+      totalSteps: 6,
+      totalStepsLegacy: TOTAL_STEPS,
+      getVisibleStepsHint: "usa situacaoUso no frontend",
     });
   });
 
@@ -335,7 +408,7 @@ function createPesquisaRouter(pool, bcrypt) {
          WHERE session_token = $2`,
         [JSON.stringify(respostas), resumeToken]
       );
-      await upsertResposta(resumeToken, sessao.id, respostas, false);
+      await upsertResposta(resumeToken, sessao.id, respostas, false, sessao.edicao || 1);
 
       if (currentSessionToken && currentSessionToken !== resumeToken) {
         await markSessionAbandoned(currentSessionToken);
@@ -387,7 +460,7 @@ function createPesquisaRouter(pool, bcrypt) {
          WHERE session_token = $2`,
         [JSON.stringify(respostas), sessionToken]
       );
-      await upsertResposta(sessionToken, sessao.id, respostas, false);
+      await upsertResposta(sessionToken, sessao.id, respostas, false, sessao.edicao || EDICAO_ATIVA);
 
       res.json({
         sessionToken,
@@ -401,18 +474,20 @@ function createPesquisaRouter(pool, bcrypt) {
     }
   });
 
-  router.post("/sessao", async (_req, res) => {
+  router.post("/sessao", async (req, res) => {
     try {
+      const edicao = Number(req.body?.edicao) === 1 ? 1 : EDICAO_ATIVA;
       const token = crypto.randomUUID();
       const result = await pool.query(
-        `INSERT INTO pesquisa_sessoes (session_token) VALUES ($1) RETURNING *`,
-        [token]
+        `INSERT INTO pesquisa_sessoes (session_token, edicao) VALUES ($1, $2) RETURNING *`,
+        [token, edicao]
       );
       res.json({
         sessionToken: result.rows[0].session_token,
         currentStep: result.rows[0].current_step,
         respostas: result.rows[0].respostas,
         status: result.rows[0].status,
+        edicao: result.rows[0].edicao,
       });
     } catch (err) {
       console.error("Erro ao criar sessão:", err);
@@ -488,7 +563,13 @@ function createPesquisaRouter(pool, bcrypt) {
         [newStep, JSON.stringify(mergedRespostas), newStatus, req.params.token]
       );
 
-      await upsertResposta(req.params.token, sessao.id, mergedRespostas, newStatus === "completed");
+      await upsertResposta(
+        req.params.token,
+        sessao.id,
+        mergedRespostas,
+        newStatus === "completed",
+        sessao.edicao || EDICAO_ATIVA
+      );
 
       res.json({
         sessionToken: req.params.token,
@@ -539,7 +620,7 @@ function createPesquisaRouter(pool, bcrypt) {
         [JSON.stringify(mergedRespostas), TOTAL_STEPS, req.params.token]
       );
 
-      await upsertResposta(req.params.token, sessao.id, mergedRespostas, true);
+      await upsertResposta(req.params.token, sessao.id, mergedRespostas, true, sessao.edicao || EDICAO_ATIVA);
 
       res.json({ success: true, respostas: mergedRespostas });
     } catch (err) {
@@ -617,7 +698,26 @@ function createPesquisaRouter(pool, bcrypt) {
 
       await markStaleSessionsAbandoned(pool);
 
-      const { where, params } = buildFilterQuery(req.query, { onlyCompleted: true });
+      const { where, params, edicaoFiltro } = buildFilterQuery(req.query, { onlyCompleted: true });
+      const edicaoAtual = edicaoFiltro === "compare" ? "compare" : edicaoFiltro || EDICAO_ATIVA;
+
+      if (edicaoAtual === "compare") {
+        const [e1, e2] = await Promise.all([
+          pool.query(`SELECT * FROM pesquisa_respostas WHERE concluida = TRUE AND edicao = 1`),
+          pool.query(`SELECT * FROM pesquisa_respostas WHERE concluida = TRUE AND edicao = 2`),
+        ]);
+        return res.json({
+          edicao: "compare",
+          edicoes: EDICOES,
+          comparativo: buildEditionComparison(e1.rows, e2.rows),
+          resumo: {
+            respostasConcluidas: e1.rows.length + e2.rows.length,
+            filtradas: e1.rows.length + e2.rows.length,
+            atualizadoEm: new Date().toISOString(),
+          },
+        });
+      }
+
       const result = await pool.query(
         `SELECT * FROM pesquisa_respostas ${where} ORDER BY created_at DESC`,
         params
@@ -628,6 +728,8 @@ function createPesquisaRouter(pool, bcrypt) {
           typeof row.fatores_compra === "string" ? JSON.parse(row.fatores_compra || "[]") : row.fatores_compra,
       }));
 
+      const edicaoParam = typeof edicaoAtual === "number" ? edicaoAtual : EDICAO_ATIVA;
+
       const [emAndamento, concluidas, comDados, abandonadas, funil, abandonadasDetalhe, downloadsRelatorio] = await Promise.all([
         pool.query(
           `SELECT
@@ -635,14 +737,25 @@ function createPesquisaRouter(pool, bcrypt) {
              COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb)::int AS com_dados
            FROM pesquisa_sessoes
            WHERE status = 'in_progress'
+             AND edicao = $2
              AND updated_at >= NOW() - ($1::int * INTERVAL '1 minute')`,
-          [ACTIVE_WINDOW_MINUTES]
+          [ACTIVE_WINDOW_MINUTES, edicaoParam]
         ),
-        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE`),
-        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL`),
-        pool.query(`SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'abandoned'`),
+        pool.query(
+          `SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE concluida = TRUE AND edicao = $1`,
+          [edicaoParam]
+        ),
+        pool.query(
+          `SELECT COUNT(*)::int AS total FROM pesquisa_respostas WHERE email IS NOT NULL AND edicao = $1`,
+          [edicaoParam]
+        ),
+        pool.query(
+          `SELECT COUNT(*)::int AS total FROM pesquisa_sessoes WHERE status = 'abandoned' AND edicao = $1`,
+          [edicaoParam]
+        ),
         // Onde as pessoas param: sessões sem nenhuma resposta são só visitas na página
-        pool.query(`
+        pool.query(
+          `
           SELECT
             COUNT(*) FILTER (WHERE respostas = '{}'::jsonb)::int AS vazias,
             COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step = 1)::int AS etapa1,
@@ -655,8 +768,12 @@ function createPesquisaRouter(pool, bcrypt) {
             COUNT(*) FILTER (WHERE respostas <> '{}'::jsonb AND current_step >= 8)::int AS etapa8
           FROM pesquisa_sessoes
           WHERE status <> 'completed'
-        `),
-        pool.query(`
+            AND edicao = $1
+        `,
+          [edicaoParam]
+        ),
+        pool.query(
+          `
           SELECT
             ps.session_token,
             ps.current_step,
@@ -679,17 +796,21 @@ function createPesquisaRouter(pool, bcrypt) {
           FROM pesquisa_sessoes ps
           LEFT JOIN pesquisa_respostas pr ON pr.session_token = ps.session_token
           WHERE ps.status = 'abandoned'
+            AND ps.edicao = $1
             AND COALESCE(pr.concluida, FALSE) = FALSE
             AND COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')) IS NOT NULL
             AND NOT EXISTS (
               SELECT 1
               FROM pesquisa_respostas pr2
               WHERE pr2.concluida = TRUE
+                AND pr2.edicao = $1
                 AND lower(pr2.email) = lower(COALESCE(NULLIF(pr.email, ''), NULLIF(ps.respostas->>'email', '')))
             )
           ORDER BY ps.updated_at DESC
           LIMIT 500
-        `),
+        `,
+          [edicaoParam]
+        ),
         pool.query(`
           SELECT
             COUNT(*)::int AS total,
@@ -721,7 +842,10 @@ function createPesquisaRouter(pool, bcrypt) {
 
       const f = funil.rows[0];
       const dashboard = buildDashboardData(rows);
+      dashboard.edicao = edicaoParam;
+      dashboard.edicoes = EDICOES;
       dashboard.resumo = {
+        edicao: edicaoParam,
         respostasConcluidas: concluidas.rows[0].total,
         sessoesEmAndamento: emAndamento.rows[0].total,
         sessoesEmAndamentoComDados: emAndamento.rows[0].com_dados,
@@ -735,17 +859,28 @@ function createPesquisaRouter(pool, bcrypt) {
         downloadsRelatorioEmailsUnicos: downloadsRelatorio.rows[0].emails_unicos,
         atualizadoEm: new Date().toISOString(),
       };
-      dashboard.funilEtapas = [
-        { step: 1, label: "Perfil", total: f.etapa1 },
-        { step: 2, label: "Experiência", total: f.etapa2 },
-        { step: 3, label: "Histórico", total: f.etapa3 },
-        { step: 4, label: "Compra", total: f.etapa4 },
-        { step: 5, label: "Resultados", total: f.etapa5 },
-        { step: 6, label: "Saúde", total: f.etapa6 },
-        { step: 7, label: "Efeitos", total: f.etapa7 },
-        { step: 8, label: "Conteúdo", total: f.etapa8 },
-      ];
+      dashboard.funilEtapas =
+        edicaoParam === 2
+          ? [
+              { step: 1, label: "Perfil", total: f.etapa1 },
+              { step: 2, label: "Experiência", total: f.etapa2 },
+              { step: 3, label: "Farmácias", total: f.etapa3 },
+              { step: 4, label: "Saúde", total: f.etapa4 },
+              { step: 5, label: "Peptídeos", total: f.etapa5 },
+              { step: 6, label: "Marketing", total: f.etapa6 },
+            ]
+          : [
+              { step: 1, label: "Perfil", total: f.etapa1 },
+              { step: 2, label: "Experiência", total: f.etapa2 },
+              { step: 3, label: "Histórico", total: f.etapa3 },
+              { step: 4, label: "Compra", total: f.etapa4 },
+              { step: 5, label: "Resultados", total: f.etapa5 },
+              { step: 6, label: "Saúde", total: f.etapa6 },
+              { step: 7, label: "Efeitos", total: f.etapa7 },
+              { step: 8, label: "Conteúdo", total: f.etapa8 },
+            ];
       dashboard.sessoesAbandonadas = sessoesAbandonadasLista;
+      dashboard.edition2 = edicaoParam === 2 ? buildEdition2Dashboard(rows) : null;
 
       res.json(dashboard);
     } catch (err) {

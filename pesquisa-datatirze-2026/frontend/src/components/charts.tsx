@@ -141,12 +141,21 @@ export function PieChartPanel({
       <PieChart>
         <Pie
           data={percentData}
-          dataKey="percent"
+          dataKey="count"
           nameKey="name"
           cx="50%"
           cy="50%"
           outerRadius={90}
-          label={({ name, percent }) => `${name} (${((Number(percent) || 0) * 100).toFixed(1)}%)`}
+          label={(props) => {
+            const name = String(props.name || "");
+            const payload = props.payload as { percent?: number };
+            // `payload.percent` já vem de toPercentData (0–100). Não multiplicar de novo.
+            const shown =
+              payload?.percent != null
+                ? Number(payload.percent)
+                : Math.round((Number(props.percent) || 0) * 1000) / 10;
+            return `${name} (${formatPercent(shown)})`;
+          }}
           labelLine={false}
         >
           {percentData.map((_, index) => (

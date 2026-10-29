@@ -17,6 +17,7 @@ export function AdminPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [filters, setFilters] = useState({
+    edicao: "2",
     estado: "",
     marca: "",
     dataInicio: "",
@@ -45,6 +46,7 @@ export function AdminPage() {
     setError(null);
     try {
       const params: Record<string, string> = {};
+      if (filters.edicao) params.edicao = filters.edicao;
       if (filters.estado) params.estado = filters.estado;
       if (filters.marca) params.marca = filters.marca;
       if (filters.dataInicio) params.dataInicio = filters.dataInicio;
@@ -93,6 +95,7 @@ export function AdminPage() {
 
   function handleExport(format: "csv" | "excel") {
     const params: Record<string, string> = {};
+    if (filters.edicao && filters.edicao !== "compare") params.edicao = filters.edicao;
     if (filters.estado) params.estado = filters.estado;
     if (filters.marca) params.marca = filters.marca;
     if (filters.dataInicio) params.dataInicio = filters.dataInicio;
@@ -156,7 +159,7 @@ export function AdminPage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Admin · DataTirze 2026</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Admin · DataTirze</p>
             <h1 className="text-xl font-bold text-brand-900">Painel da Pesquisa Nacional</h1>
             <p className="text-xs text-slate-500">Olá, {adminName}</p>
             {lastUpdated && (
@@ -196,15 +199,15 @@ export function AdminPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Respostas concluídas"
-            value={data.resumo?.respostasConcluidas ?? data.total}
+            value={data.resumo?.respostasConcluidas ?? data.total ?? 0}
           />
           <StatCard
             label="Exibidas nos filtros"
-            value={data.resumo?.filtradas ?? data.total}
+            value={data.resumo?.filtradas ?? data.total ?? 0}
           />
           <StatCard
             label="Com e-mail no banco"
-            value={data.resumo?.respostasComEmail ?? data.total}
+            value={data.resumo?.respostasComEmail ?? 0}
           />
           <StatCard
             label="Sessões em andamento"
@@ -213,9 +216,10 @@ export function AdminPage() {
           />
         </div>
 
+        {filters.edicao !== "compare" && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Já utilizaram tirzepatida" value={data.utilizadores} />
-          <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal} />
+          <StatCard label="Já utilizaram Queridinhas" value={data.utilizadores ?? 0} />
+          <StatCard label="Nunca utilizaram" value={data.naoUtilizadoresTotal ?? 0} />
           <StatCard
             label="Sessões abandonadas"
             value={data.resumo?.sessoesAbandonadas ?? 0}
@@ -227,8 +231,9 @@ export function AdminPage() {
             sub={`${data.resumo?.downloadsRelatorioEmailsUnicos ?? 0} e-mails únicos`}
           />
         </div>
+        )}
 
-        {(data.funilEtapas || []).length > 0 && (
+        {filters.edicao !== "compare" && (data.funilEtapas || []).length > 0 && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-slate-700">Onde as pessoas param</h2>
@@ -255,6 +260,7 @@ export function AdminPage() {
           </div>
         )}
 
+        {filters.edicao !== "compare" && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -316,14 +322,29 @@ export function AdminPage() {
             </div>
           )}
         </div>
+        )}
 
+        {filters.edicao === "1" && data.saude && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <StatCard label="Satisfação média" value={`${data.saude.satisfacaoMedia}/10`} />
         </div>
+        )}
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-700">Filtros</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <label className="mb-1 block text-xs text-slate-500">Edição</label>
+              <select
+                value={filters.edicao}
+                onChange={(e) => setFilters((f) => ({ ...f, edicao: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                <option value="2">2ª edição (atual)</option>
+                <option value="1">1ª edição</option>
+                <option value="compare">Comparativo E1 × E2</option>
+              </select>
+            </div>
             <div>
               <label className="mb-1 block text-xs text-slate-500">Estado</label>
               <select
@@ -332,7 +353,7 @@ export function AdminPage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
                 <option value="">Todos</option>
-                {data.filtros.estados.map((uf) => (
+                {(data.filtros?.estados || []).map((uf) => (
                   <option key={uf} value={uf}>{uf}</option>
                 ))}
               </select>
@@ -345,7 +366,7 @@ export function AdminPage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
                 <option value="">Todas</option>
-                {data.filtros.marcas.map((m) => (
+                {(data.filtros?.marcas || []).map((m) => (
                   <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </select>
@@ -371,7 +392,46 @@ export function AdminPage() {
           </div>
         </div>
 
-        {data.insights.length > 0 && (
+        {filters.edicao === "compare" && data.comparativo && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-brand-900">Evolução do mercado (E1 × E2)</h2>
+            <p className="text-sm text-slate-500">
+              Totais: E1 {data.comparativo.totais.e1} · E2 {data.comparativo.totais.e2}. Variação em pontos percentuais.
+            </p>
+            <div className="overflow-auto rounded-2xl border border-slate-200 bg-white">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Indicador / categoria</th>
+                    <th className="px-3 py-2">E1 %</th>
+                    <th className="px-3 py-2">E2 %</th>
+                    <th className="px-3 py-2">Δ pp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.comparativo.marcaAtual || []).slice(0, 12).map((row) => (
+                    <tr key={`marca-${row.name}`} className="border-t border-slate-100">
+                      <td className="px-3 py-2">Marca · {row.name}</td>
+                      <td className="px-3 py-2">{row.p1}%</td>
+                      <td className="px-3 py-2">{row.p2}%</td>
+                      <td className="px-3 py-2">{row.deltaPp > 0 ? `+${row.deltaPp}` : row.deltaPp}</td>
+                    </tr>
+                  ))}
+                  {(data.comparativo.gastoMensal || []).slice(0, 8).map((row) => (
+                    <tr key={`gasto-${row.name}`} className="border-t border-slate-100">
+                      <td className="px-3 py-2">Gasto · {row.name}</td>
+                      <td className="px-3 py-2">{row.p1}%</td>
+                      <td className="px-3 py-2">{row.p2}%</td>
+                      <td className="px-3 py-2">{row.deltaPp > 0 ? `+${row.deltaPp}` : row.deltaPp}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {(data.insights || []).length > 0 && filters.edicao !== "compare" && (
           <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4 sm:p-6">
             <h2 className="mb-3 text-sm font-semibold text-brand-900">Insights automáticos</h2>
             <ul className="space-y-2">
@@ -385,6 +445,8 @@ export function AdminPage() {
           </div>
         )}
 
+        {filters.edicao !== "compare" && data.demografia && (
+        <>
         <div className="grid gap-4 lg:grid-cols-2">
           <ChartCard title="Distribuição por idade">
             <BarChartPanel data={data.demografia.idade} />
@@ -399,6 +461,58 @@ export function AdminPage() {
             <BarChartPanel data={data.demografia.faixaRenda} color="#22c55e" />
           </ChartCard>
         </div>
+
+        {data.edition2 && (
+          <>
+            <h2 className="text-lg font-bold text-brand-900">Farmácias e fornecedores (2ª edição)</h2>
+            <p className="text-xs text-slate-500">Resultados baseados em relatos dos participantes.</p>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartCard title="Top farmácias mais confiáveis">
+                <BarChartPanel
+                  data={data.edition2.farmacias.confianca}
+                  layout="horizontal"
+                  percentBase={data.edition2.total}
+                  labelWidth={140}
+                />
+              </ChartCard>
+              <ChartCard title="Onde ocorreu a última compra">
+                <BarChartPanel
+                  data={data.edition2.farmacias.ultimaCompra}
+                  layout="horizontal"
+                  percentBase={data.edition2.total}
+                  labelWidth={140}
+                />
+              </ChartCard>
+              <ChartCard title="Tipo de fornecedor">
+                <PieChartPanel data={data.edition2.farmacias.tipoFornecedor} />
+              </ChartCard>
+              <ChartCard title="Problemas com compras">
+                <BarChartPanel
+                  data={data.edition2.farmacias.problemas}
+                  layout="horizontal"
+                  color="#ef4444"
+                  percentBase={data.edition2.total}
+                />
+              </ChartCard>
+            </div>
+
+            <h2 className="text-lg font-bold text-brand-900">Peptídeos (2ª edição)</h2>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartCard title="Conhecimento sobre retatrutida">
+                <PieChartPanel data={data.edition2.peptideos.conheceRetatrutida} />
+              </ChartCard>
+              <ChartCard title="Uso de retatrutida">
+                <BarChartPanel data={data.edition2.peptideos.usouRetatrutida} />
+              </ChartCard>
+              <ChartCard title="Peptídeos conhecidos">
+                <BarChartPanel data={data.edition2.peptideos.conheco} layout="horizontal" percentBase={data.edition2.total} />
+              </ChartCard>
+              <ChartCard title="Peptídeos já utilizados">
+                <BarChartPanel data={data.edition2.peptideos.utilizei} layout="horizontal" percentBase={data.edition2.total} />
+              </ChartCard>
+            </div>
+          </>
+        )}
 
         <h2 className="text-lg font-bold text-brand-900">Marcas</h2>
         <div className="grid gap-4 lg:grid-cols-2">
@@ -429,7 +543,7 @@ export function AdminPage() {
           </ChartCard>
           <ChartCard title="Fatores de compra (prioridade)">
             <BarChartPanel
-              data={data.compra.fatoresCompra.map((f) => ({ name: f.name, total: f.media }))}
+              data={(data.compra.fatoresCompra || []).map((f) => ({ name: f.name, total: f.media }))}
               layout="horizontal"
             />
           </ChartCard>
@@ -523,7 +637,7 @@ export function AdminPage() {
           </ChartCard>
         </div>
 
-        {data.respostasAbertas.length > 0 && (
+        {(data.respostasAbertas || []).length > 0 && (
           <ChartCard title="Respostas abertas (amostra)" className="col-span-full">
             <div className="max-h-96 space-y-3 overflow-y-auto">
               {data.respostasAbertas.map((r) => (
@@ -544,6 +658,8 @@ export function AdminPage() {
               ))}
             </div>
           </ChartCard>
+        )}
+        </>
         )}
       </main>
     </div>

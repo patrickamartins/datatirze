@@ -57,10 +57,10 @@ export interface PesquisaRespostas {
   faltaMercado?: string;
 }
 
-export interface SessaoResponse {
+export interface SessaoResponse<TRespostas = PesquisaRespostas> {
   sessionToken: string;
   currentStep: number;
-  respostas: PesquisaRespostas;
+  respostas: TRespostas;
   status: string;
 }
 
@@ -73,6 +73,28 @@ export interface DashboardData {
   total: number;
   utilizadores: number;
   naoUtilizadoresTotal: number;
+  edicao?: number | string;
+  edicoes?: Array<{ id: number; title: string; status: string }>;
+  edition2?: {
+    total: number;
+    farmacias: {
+      confianca: ChartItem[];
+      ultimaCompra: ChartItem[];
+      tipoFornecedor: ChartItem[];
+      problemas: ChartItem[];
+    };
+    peptideos: {
+      conheceRetatrutida: ChartItem[];
+      usouRetatrutida: ChartItem[];
+      conheco: ChartItem[];
+      utilizei: ChartItem[];
+    };
+  } | null;
+  comparativo?: {
+    totais: { e1: number; e2: number };
+    marcaAtual: Array<{ name: string; p1: number; p2: number; deltaPp: number }>;
+    gastoMensal: Array<{ name: string; p1: number; p2: number; deltaPp: number }>;
+  };
   resumo?: {
     respostasConcluidas: number;
     sessoesEmAndamento: number;
@@ -86,6 +108,7 @@ export interface DashboardData {
     downloadsRelatorio?: number;
     downloadsRelatorioEmailsUnicos?: number;
     atualizadoEm?: string;
+    edicao?: number | string;
   };
   funilEtapas?: Array<{ step: number; label: string; total: number }>;
   demografia: {
