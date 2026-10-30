@@ -540,7 +540,7 @@ function createPesquisaRouter(pool, bcrypt) {
         if (!isValidEmail(email)) {
           return res.status(400).json({ error: "Informe um e-mail válido" });
         }
-        if (await emailJaUtilizado(email, req.params.token)) {
+        if (await emailJaUtilizado(email, req.params.token, sessao.edicao || EDICAO_ATIVA)) {
           return res.status(409).json({
             error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
           });
@@ -606,7 +606,7 @@ function createPesquisaRouter(pool, bcrypt) {
       if (!email || !isValidEmail(email)) {
         return res.status(400).json({ error: "Informe um e-mail válido para concluir a pesquisa" });
       }
-      if (await emailJaUtilizado(email, req.params.token)) {
+      if (await emailJaUtilizado(email, req.params.token, sessao.edicao || EDICAO_ATIVA)) {
         return res.status(409).json({
           error: "Este e-mail já concluiu a pesquisa. Cada pessoa pode participar apenas uma vez.",
         });

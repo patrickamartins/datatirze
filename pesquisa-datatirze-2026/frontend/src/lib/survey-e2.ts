@@ -260,6 +260,7 @@ export function getFieldVisibilityE2(
     respostas.conheceRetatrutida === "conheco" || respostas.conheceRetatrutida === "ouvi_pouco";
 
   return {
+    email: true,
     idade: true,
     genero: true,
     estado: true,

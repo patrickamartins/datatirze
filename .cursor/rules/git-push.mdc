@@ -1,0 +1,16 @@
+---
+description: Ao finalizar uma alteração, gerar o build necessário, commitar e enviar para o GitHub
+alwaysApply: true
+---
+
+# Envio automático para o Git
+
+Quando uma tarefa solicitada terminar e houver alterações de código:
+
+1. Use o WSL em todos os comandos de terminal.
+2. Se a interface em `pesquisa-datatirze-2026/frontend` mudou, rode `npm run pesquisa:build` na raiz antes do commit, para atualizar `pesquisa-datatirze-2026/dist`.
+3. Faça o commit com mensagem semântica (`feat:`, `fix:`, `refactor:`, `test:`) explicando o porquê. Passe o autor só naquele comando, sem alterar o `git config`: `-c user.name="patrickamartins" -c user.email="211501795+patrickamartins@users.noreply.github.com"`.
+4. Envie com `git push` para `https://github.com/patrickamartins/datatirze.git`. Se `origin` não existir, adicione esse endereço. Use o Git Credential Manager do Windows quando o push precisar de autenticação, sem pedir confirmação.
+5. Não use `--force` em `main`. Não inclua `.env`, credenciais ou segredos.
+
+Não faça commit nem push quando o pedido for só explicação, revisão ou pergunta, sem mudança de código.

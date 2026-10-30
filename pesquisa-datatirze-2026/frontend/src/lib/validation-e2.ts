@@ -89,6 +89,15 @@ export function validateStepE2(
   const values = respostas as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
+  if (step === STEP_E2.PERFIL && visibility.email) {
+    const email = typeof values.email === "string" ? values.email.trim() : "";
+    if (!email) {
+      errors.email = "Informe seu e-mail";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Informe um e-mail válido";
+    }
+  }
+
   for (const [field, rule] of Object.entries(rules)) {
     if (!visibility[field]) continue;
     if (!rule.schema.safeParse(values[field]).success) errors[field] = rule.message;

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface OptionButtonProps {
@@ -63,20 +64,44 @@ interface TextInputProps {
   error?: string;
   placeholder?: string;
   type?: string;
+  autoComplete?: string;
+  required?: boolean;
 }
 
-export function TextInput({ label, value, onChange, error, placeholder, type = "text" }: TextInputProps) {
+export function TextInput({
+  label,
+  value,
+  onChange,
+  error,
+  placeholder,
+  type = "text",
+  autoComplete,
+  required = false,
+}: TextInputProps) {
+  const inputId = useId();
+
   return (
     <div className="mb-5">
-      <label className="field-label">{label}</label>
+      <label className="field-label" htmlFor={inputId}>
+        {label}
+      </label>
       <input
+        id={inputId}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        autoComplete={autoComplete}
+        required={required}
+        aria-required={required || undefined}
+        aria-invalid={error ? true : undefined}
         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
       />
-      {error && <p className="field-error">{error}</p>}
+      {error && (
+        <p role="alert" className="field-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

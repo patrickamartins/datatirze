@@ -36,6 +36,7 @@ export interface PesquisaConfigE2 {
 export type SituacaoUsoE2 = "atual" | "ex" | "interesse" | "sem_interesse";
 
 export interface PesquisaRespostasE2 {
+  email?: string;
   idade?: string;
   genero?: string;
   estado?: string;

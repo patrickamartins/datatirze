@@ -161,9 +161,11 @@ export function SurveyE2Page() {
         await saveSession<PesquisaRespostasE2>(token, { currentStep: step, respostas: data });
         setLastSaved(new Date());
         setSubmitError(null);
+        return true;
       } catch (error) {
         console.error("Erro ao salvar:", error);
         setSubmitError(error instanceof Error ? error.message : "Não foi possível salvar suas respostas");
+        return false;
       } finally {
         setSaving(false);
       }
@@ -223,8 +225,9 @@ export function SurveyE2Page() {
       }
 
       const nextStep = visibleSteps[stepIndex + 1];
+      const saved = await persist(nextStep, respostas);
+      if (!saved) return;
       setStep(nextStep);
-      await persist(nextStep, respostas);
       scrollToTop();
     } catch (error) {
       setSaving(false);
@@ -324,8 +327,8 @@ export function SurveyE2Page() {
 
         {!isCompleted && (
           <p className="mt-4 px-2 text-center text-xs leading-relaxed text-slate-400">
-            Pesquisa anônima. Não pedimos nome, e-mail, telefone ou CPF. Seus dados são tratados de forma
-            agregada.
+            O e-mail é obrigatório para garantir uma resposta por pessoa e não é publicado. Não pedimos nome,
+            telefone ou CPF.
           </p>
         )}
       </main>

@@ -42,7 +42,18 @@ export function StepPerfilE2({ config, respostas, onChange, errors }: StepE2Prop
       <StepHeader
         step={STEP_E2.PERFIL}
         config={config}
-        fallbackSubtitle="Pesquisa anônima, sem e-mail, nome, telefone ou CPF."
+        fallbackSubtitle="O e-mail garante uma resposta por pessoa e não será exibido publicamente."
+      />
+
+      <TextInput
+        label="E-mail *"
+        type="email"
+        value={respostas.email || ""}
+        onChange={(email) => onChange({ email })}
+        error={errors.email}
+        placeholder="seuemail@exemplo.com"
+        autoComplete="email"
+        required
       />
 
       <SingleChoiceE2
@@ -87,8 +98,9 @@ export function StepPerfilE2({ config, respostas, onChange, errors }: StepE2Prop
             className="mt-0.5 h-6 w-6 shrink-0 rounded-md border-slate-300 text-brand-600 focus:ring-brand-500"
           />
           <span>
-            Entendo que minhas respostas são <strong>anônimas</strong>, usadas apenas em análises estatísticas
-            agregadas e que posso parar a qualquer momento.
+            Entendo que o e-mail identifica uma participação e <strong>não será publicado</strong>. Não pedimos
+            nome, telefone ou CPF. As respostas são usadas apenas em análises estatísticas agregadas e posso parar
+            a qualquer momento.
           </span>
         </label>
         {errors.privacyAccepted && (
