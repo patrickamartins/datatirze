@@ -173,6 +173,26 @@ export function StepExperienciaE2({ config, respostas, onChange, errors }: StepE
         />
       )}
 
+      {visible.melhorMarca && (
+        <SingleChoiceE2
+          label="Qual marca você considera a melhor?"
+          options={optionsFor("melhorMarca")}
+          value={respostas.melhorMarca}
+          onChange={(melhorMarca) => onChange({ melhorMarca })}
+          error={errors.melhorMarca}
+        />
+      )}
+
+      {visible.melhorCustoBeneficio && (
+        <SingleChoiceE2
+          label="Qual marca tem o melhor custo-benefício?"
+          options={optionsFor("melhorCustoBeneficio")}
+          value={respostas.melhorCustoBeneficio}
+          onChange={(melhorCustoBeneficio) => onChange({ melhorCustoBeneficio })}
+          error={errors.melhorCustoBeneficio}
+        />
+      )}
+
       {visible.mudouMarca && (
         <SingleChoiceE2
           label="Você já trocou de marca?"
@@ -253,16 +273,27 @@ export function StepCompraE2({ config, respostas, onChange, errors }: StepE2Prop
       )}
 
       <SingleChoiceE2
-        label={isInterested ? "De que tipo de fornecedor você compraria?" : "De que tipo de fornecedor você compra?"}
+        label={
+          isInterested
+            ? "Onde você compraria as Queridinhas?"
+            : "Onde ocorreu a sua última compra?"
+        }
         options={optionsFor("tipoFornecedor")}
         value={respostas.tipoFornecedor}
-        onChange={(tipoFornecedor) => onChange({ tipoFornecedor })}
+        onChange={(tipoFornecedor) =>
+          onChange({
+            tipoFornecedor,
+            ...(tipoFornecedor !== "farmacia_py" && tipoFornecedor !== "farmacia_br"
+              ? { farmaciaUltima: "", farmaciaUltimaOutro: "", farmaciaBrNome: "" }
+              : {}),
+          })
+        }
         error={errors.tipoFornecedor}
       />
 
       {visible.farmaciaUltima && (
         <SingleChoiceE2
-          label="Em qual farmácia foi a sua última compra?"
+          label="Em qual farmácia?"
           options={optionsFor("farmaciaUltima")}
           value={respostas.farmaciaUltima}
           onChange={(farmaciaUltima) => onChange({ farmaciaUltima })}
@@ -396,6 +427,14 @@ export function StepSaudeE2({ config, respostas, onChange, errors }: StepE2Props
       />
 
       <SingleChoiceE2
+        label="Você pratica atividade física?"
+        options={optionsFor("atividadeFisica")}
+        value={respostas.atividadeFisica}
+        onChange={(atividadeFisica) => onChange({ atividadeFisica })}
+        error={errors.atividadeFisica}
+      />
+
+      <SingleChoiceE2
         label="Você recuperou o peso depois de parar ou reduzir a dose?"
         options={optionsFor("recuperouPeso")}
         value={respostas.recuperouPeso}
@@ -504,10 +543,32 @@ export function StepMarketingE2({ config, respostas, onChange, errors }: StepE2P
       />
       {visible.influenciadorNome && (
         <TextInput
-          label="Qual influenciador? (opcional)"
+          label="Qual influenciador mais influenciou sua decisão? (opcional)"
           value={respostas.influenciadorNome || ""}
           onChange={(influenciadorNome) => onChange({ influenciadorNome })}
           placeholder="Nome ou perfil"
+        />
+      )}
+
+      <SingleChoiceE2
+        label="Você acompanha influenciadores sobre as Queridinhas?"
+        options={optionsFor("acompanhaInfluenciadores")}
+        value={respostas.acompanhaInfluenciadores}
+        onChange={(acompanhaInfluenciadores) =>
+          onChange({
+            acompanhaInfluenciadores,
+            ...(acompanhaInfluenciadores !== "sim" ? { influenciadores: "" } : {}),
+          })
+        }
+        error={errors.acompanhaInfluenciadores}
+      />
+      {visible.influenciadores && (
+        <TextInput
+          label="Quais influenciadores você acompanha?"
+          value={respostas.influenciadores || ""}
+          onChange={(influenciadores) => onChange({ influenciadores })}
+          error={errors.influenciadores}
+          placeholder="Ex.: nomes ou perfis separados por vírgula"
         />
       )}
 

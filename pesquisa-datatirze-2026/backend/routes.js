@@ -241,7 +241,6 @@ function createPesquisaRouter(pool, bcrypt) {
       melhor_custo_beneficio: r.melhorCustoBeneficio || null,
       melhores_resultados: r.melhoresResultados || null,
       menor_resultado: r.menorResultado || null,
-      onde_compra: r.ondeCompra || null,
       como_conheceu: r.comoConheceu || null,
       gasto_mensal: r.gastoMensal || null,
       preco_justo: r.precoJusto || null,
@@ -259,7 +258,12 @@ function createPesquisaRouter(pool, bcrypt) {
         ? Number(r.satisfacao)
         : null,
       expectativa_atingida: r.expectativaAtingida || null,
-      acompanhamento_medico: r.acompanhamentoMedico === true ? true : r.acompanhamentoMedico === false ? false : null,
+      acompanhamento_medico:
+        r.acompanhamentoMedico === true || r.acompanhamentoMedico === "sim"
+          ? true
+          : r.acompanhamentoMedico === false || r.acompanhamentoMedico === "nao"
+            ? false
+            : null,
       acompanhamento_nutricional:
         r.acompanhamentoNutricional === true ? true : r.acompanhamentoNutricional === false ? false : null,
       atividade_fisica: r.atividadeFisica || null,
@@ -271,8 +275,13 @@ function createPesquisaRouter(pool, bcrypt) {
       efeito_interrupcao: r.efeitoInterrupcao || null,
       fontes_informacao: Array.isArray(r.fontesInformacao) ? r.fontesInformacao : null,
       acompanha_influenciadores:
-        r.acompanhaInfluenciadores === true ? true : r.acompanhaInfluenciadores === false ? false : null,
-      influenciadores: r.influenciadores || null,
+        r.acompanhaInfluenciadores === true || r.acompanhaInfluenciadores === "sim"
+          ? true
+          : r.acompanhaInfluenciadores === false || r.acompanhaInfluenciadores === "nao"
+            ? false
+            : null,
+      influenciadores: r.influenciadores || r.influenciadorNome || null,
+      onde_compra: r.tipoFornecedor || r.ondeCompra || null,
       tipo_conteudo: r.tipoConteudo || null,
       falta_mercado: r.faltaMercado || null,
       respostas_completas: JSON.stringify(r || {}),

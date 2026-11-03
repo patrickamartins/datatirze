@@ -46,6 +46,8 @@ export interface PesquisaRespostasE2 {
   marcaAtual?: string;
   marcasUtilizadas?: string[];
   marcaConfiavel?: string;
+  melhorMarca?: string;
+  melhorCustoBeneficio?: string;
   mudouMarca?: string;
   motivoMudanca?: string;
   marcaAnterior?: string;
@@ -53,6 +55,7 @@ export interface PesquisaRespostasE2 {
 
   farmaciaConfianca?: string;
   farmaciaConfiancaOutro?: string;
+  /** Onde ocorreu a última compra (farmácia, revendedor local, internet etc.). */
   tipoFornecedor?: string;
   farmaciaUltima?: string;
   farmaciaUltimaOutro?: string;
@@ -69,6 +72,7 @@ export interface PesquisaRespostasE2 {
   efeitoOutro?: string;
   prescricaoMedica?: string;
   acompanhamentoMedico?: string;
+  atividadeFisica?: string;
   recuperouPeso?: string;
 
   conheceRetatrutida?: string;
@@ -80,6 +84,8 @@ export interface PesquisaRespostasE2 {
   fontesInformacao?: string[];
   tipoConteudo?: string;
   influenciaInfluenciador?: string;
+  acompanhaInfluenciadores?: string;
+  influenciadores?: string;
   influenciadorNome?: string;
   participaGrupos?: string;
 

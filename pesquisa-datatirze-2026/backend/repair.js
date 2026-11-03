@@ -144,7 +144,11 @@ async function runRepair(pool) {
         satisfacao: r.satisfacao != null && r.satisfacao !== "" ? Number(r.satisfacao) : null,
         expectativa_atingida: r.expectativaAtingida || null,
         acompanhamento_medico:
-          r.acompanhamentoMedico === true ? true : r.acompanhamentoMedico === false ? false : null,
+          r.acompanhamentoMedico === true || r.acompanhamentoMedico === "sim"
+            ? true
+            : r.acompanhamentoMedico === false || r.acompanhamentoMedico === "nao"
+              ? false
+              : null,
         acompanhamento_nutricional:
           r.acompanhamentoNutricional === true
             ? true
@@ -160,12 +164,13 @@ async function runRepair(pool) {
         efeito_interrupcao: r.efeitoInterrupcao || null,
         fontes_informacao: Array.isArray(r.fontesInformacao) ? r.fontesInformacao : null,
         acompanha_influenciadores:
-          r.acompanhaInfluenciadores === true
+          r.acompanhaInfluenciadores === true || r.acompanhaInfluenciadores === "sim"
             ? true
-            : r.acompanhaInfluenciadores === false
+            : r.acompanhaInfluenciadores === false || r.acompanhaInfluenciadores === "nao"
               ? false
               : null,
-        influenciadores: r.influenciadores || null,
+        influenciadores: r.influenciadores || r.influenciadorNome || null,
+        onde_compra: r.tipoFornecedor || r.ondeCompra || null,
         tipo_conteudo: r.tipoConteudo || null,
         falta_mercado: r.faltaMercado || null,
         respostas_completas: toJsonb(r || {}),

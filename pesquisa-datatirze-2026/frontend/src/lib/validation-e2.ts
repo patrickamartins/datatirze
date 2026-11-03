@@ -35,6 +35,8 @@ const STEP_RULES: Record<number, Record<string, FieldRule>> = {
     marcaAtual: required("Selecione a marca que você usa"),
     marcasUtilizadas: requiredMulti("Selecione ao menos uma marca"),
     marcaConfiavel: required("Selecione uma opção"),
+    melhorMarca: required("Selecione a marca considerada melhor"),
+    melhorCustoBeneficio: required("Selecione a marca com melhor custo-benefício"),
     mudouMarca: required("Selecione uma opção"),
     motivoMudanca: required("Selecione o motivo"),
     marcaAnterior: required("Selecione a marca anterior"),
@@ -43,8 +45,8 @@ const STEP_RULES: Record<number, Record<string, FieldRule>> = {
   [STEP_E2.COMPRA]: {
     farmaciaConfianca: required("Selecione uma opção"),
     farmaciaConfiancaOutro: required("Conte qual é"),
-    tipoFornecedor: required("Selecione uma opção"),
-    farmaciaUltima: required("Selecione uma opção"),
+    tipoFornecedor: required("Selecione onde ocorreu a última compra"),
+    farmaciaUltima: required("Selecione a farmácia"),
     farmaciaUltimaOutro: required("Conte qual é"),
     gastoMensal: required("Selecione uma faixa"),
     precoJusto: required("Selecione uma faixa"),
@@ -59,6 +61,7 @@ const STEP_RULES: Record<number, Record<string, FieldRule>> = {
     efeitoOutro: required("Conte qual foi o efeito"),
     prescricaoMedica: required("Selecione uma opção"),
     acompanhamentoMedico: required("Selecione uma opção"),
+    atividadeFisica: required("Selecione uma opção"),
     recuperouPeso: required("Selecione uma opção"),
   },
   [STEP_E2.PEPTIDEOS]: {
@@ -72,6 +75,8 @@ const STEP_RULES: Record<number, Record<string, FieldRule>> = {
     fontesInformacao: requiredMulti("Selecione ao menos uma opção"),
     tipoConteudo: required("Selecione uma opção"),
     influenciaInfluenciador: required("Selecione uma opção"),
+    acompanhaInfluenciadores: required("Selecione uma opção"),
+    influenciadores: required("Informe os influenciadores que você acompanha"),
     participaGrupos: required("Selecione uma opção"),
   },
 };

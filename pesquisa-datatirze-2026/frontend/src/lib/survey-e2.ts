@@ -124,7 +124,14 @@ const DEFAULT_OPCOES: Record<string, OpcaoE2[]> = {
   situacaoUso: options(["atual", "Uso as Queridinhas atualmente"], ["ex", "Já usei, mas parei"], ["interesse", "Nunca usei, mas tenho interesse"], ["sem_interesse", "Nunca usei e não tenho interesse"]),
   mudouMarca: options(["sim", "Sim"], ["nao", "Não"]),
   motivoMudanca: options(["preco", "Preço"], ["resultado", "Resultado"], ["efeitos", "Efeitos colaterais"], ["disponibilidade", "Disponibilidade"], ["indicacao", "Indicação de alguém"], ["confianca", "Mais confiança na origem"], ["outro", "Outro"]),
-  tipoFornecedor: options(["manipulada", "Farmácia de manipulação"], ["industrializada", "Produto industrializado"], ["importado", "Importado"], ["nao_sei", "Não sei informar"]),
+  tipoFornecedor: options(
+    ["farmacia_py", "Farmácia paraguaia"],
+    ["farmacia_br", "Farmácia brasileira"],
+    ["revendedor_local", "Revendedor local"],
+    ["internet", "Internet / loja online"],
+    ["outro", "Outro"],
+    ["nao_sei", "Não sei informar"]
+  ),
   gastoMensal: options(["ate_300", "Até R$ 300"], ["300_600", "R$ 300 a R$ 600"], ["600_1000", "R$ 600 a R$ 1.000"], ["1000_mais", "Mais de R$ 1.000"], ["nao_sei", "Ainda não sei"]),
   precoJusto: options(["ate_300", "Até R$ 300"], ["300_600", "R$ 300 a R$ 600"], ["600_1000", "R$ 600 a R$ 1.000"], ["1000_mais", "Mais de R$ 1.000"]),
   fatoresCompra: options(["preco", "Preço"], ["confianca", "Confiança na origem"], ["resultado", "Resultado comprovado"], ["entrega", "Prazo de entrega"], ["indicacao", "Indicação"], ["atendimento", "Atendimento"], ["outro", "Outro"]),
@@ -134,6 +141,7 @@ const DEFAULT_OPCOES: Record<string, OpcaoE2[]> = {
   efeitosColaterais: options(["nausea", "Náusea"], ["constipacao", "Constipação"], ["diarreia", "Diarreia"], ["fadiga", "Cansaço"], ["dor_cabeca", "Dor de cabeça"], ["nenhum", "Nenhum"], ["outro", "Outro"]),
   prescricaoMedica: options(["sim", "Sim"], ["nao", "Não"], ["prefiro_nao", "Prefiro não responder"]),
   acompanhamentoMedico: options(["sim", "Sim"], ["nao", "Não"], ["prefiro_nao", "Prefiro não responder"]),
+  atividadeFisica: options(["nao", "Não"], ["1_2x", "1-2x por semana"], ["3_4x", "3-4x por semana"], ["5_mais", "5 ou mais vezes por semana"]),
   recuperouPeso: options(["sim", "Sim"], ["nao", "Não"], ["nao_se_aplica", "Não se aplica"], ["prefiro_nao", "Prefiro não responder"]),
   conheceRetatrutida: options(["conheco", "Conheço bem"], ["ouvi_pouco", "Ouvi falar um pouco"], ["nao_conheco", "Não conheço"]),
   usouRetatrutida: options(["atual", "Uso atualmente"], ["ja_usei", "Já usei"], ["nunca", "Nunca usei"], ["prefiro_nao", "Prefiro não responder"]),
@@ -141,6 +149,7 @@ const DEFAULT_OPCOES: Record<string, OpcaoE2[]> = {
   fontesInformacao: options(["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["medico", "Médico(a)"], ["amigos", "Amigos e familiares"], ["grupos", "Grupos de mensagem"], ["nao_busco", "Não busco informações"], ["outro", "Outro"]),
   tipoConteudo: options(["video_curto", "Vídeos curtos"], ["video_longo", "Vídeos longos"], ["texto", "Textos e artigos"], ["depoimento", "Depoimentos de usuários"], ["cientifico", "Conteúdo científico"]),
   influenciaInfluenciador: options(["ja_comprei", "Já comprei por influência"], ["considerei", "Já considerei comprar"], ["nao", "Não influencia"], ["nao_sigo", "Não sigo influenciadores"]),
+  acompanhaInfluenciadores: options(["sim", "Sim"], ["nao", "Não"]),
   participaGrupos: options(["sim", "Sim"], ["nao", "Não"], ["prefiro_nao", "Prefiro não responder"]),
 };
 
@@ -166,6 +175,8 @@ export const SHUFFLED_QUESTION_SOURCES: Record<string, CatalogKey> = {
   marcaAtual: "marcas",
   marcasUtilizadas: "marcas",
   marcaConfiavel: "marcas",
+  melhorMarca: "marcas",
+  melhorCustoBeneficio: "marcas",
   marcaAnterior: "marcas",
   marcaNova: "marcas",
   motivoMudanca: "motivoMudanca",
@@ -271,6 +282,8 @@ export function getFieldVisibilityE2(
     marcaAtual: isCurrent,
     marcasUtilizadas: isUser,
     marcaConfiavel: isUser || isInterested,
+    melhorMarca: isUser,
+    melhorCustoBeneficio: isUser,
     mudouMarca: isUser,
     motivoMudanca: changedBrand,
     marcaAnterior: changedBrand,
@@ -279,9 +292,16 @@ export function getFieldVisibilityE2(
     farmaciaConfianca: isUser || isInterested,
     farmaciaConfiancaOutro: (isUser || isInterested) && isOtherOptionId(respostas.farmaciaConfianca),
     tipoFornecedor: isUser || isInterested,
-    farmaciaUltima: isUser,
-    farmaciaUltimaOutro: isUser && isOtherOptionId(respostas.farmaciaUltima),
-    farmaciaBrNome: isUser && isBrazilianPharmacy(config, respostas.farmaciaUltima),
+    farmaciaUltima:
+      isUser && (respostas.tipoFornecedor === "farmacia_py" || respostas.tipoFornecedor === "farmacia_br"),
+    farmaciaUltimaOutro:
+      isUser &&
+      (respostas.tipoFornecedor === "farmacia_py" || respostas.tipoFornecedor === "farmacia_br") &&
+      isOtherOptionId(respostas.farmaciaUltima),
+    farmaciaBrNome:
+      isUser &&
+      respostas.tipoFornecedor === "farmacia_br" &&
+      (Boolean(respostas.farmaciaUltima) || isBrazilianPharmacy(config, respostas.farmaciaUltima)),
     gastoMensal: isUser || isInterested,
     precoJusto: isUser || isInterested,
     fatoresCompra: isUser || isInterested,
@@ -294,6 +314,7 @@ export function getFieldVisibilityE2(
     efeitoOutro: isUser && Boolean(respostas.efeitosColaterais?.some(isOtherOptionId)),
     prescricaoMedica: isUser,
     acompanhamentoMedico: isUser,
+    atividadeFisica: isUser,
     recuperouPeso: isUser,
 
     conheceRetatrutida: hasSituacao,
@@ -305,6 +326,8 @@ export function getFieldVisibilityE2(
     fontesInformacao: hasSituacao,
     tipoConteudo: hasSituacao,
     influenciaInfluenciador: hasSituacao,
+    acompanhaInfluenciadores: hasSituacao,
+    influenciadores: hasSituacao && respostas.acompanhaInfluenciadores === "sim",
     influenciadorNome:
       hasSituacao &&
       (respostas.influenciaInfluenciador === "ja_comprei" || respostas.influenciaInfluenciador === "considerei"),

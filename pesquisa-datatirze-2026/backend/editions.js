@@ -116,10 +116,30 @@ const OPCOES_E2 = {
   tipoFornecedor: [
     { id: "farmacia_py", label: "Farmácia paraguaia" },
     { id: "farmacia_br", label: "Farmácia brasileira" },
-    { id: "revendedor", label: "Revendedor independente" },
-    { id: "loja_online", label: "Loja online" },
+    { id: "revendedor_local", label: "Revendedor local" },
+    { id: "internet", label: "Internet / loja online" },
     { id: "outro", label: "Outro", pinnedEnd: true },
     { id: "nao_sei", label: "Não sei informar", pinnedEnd: true },
+  ],
+  atividadeFisica: [
+    { id: "nao", label: "Não" },
+    { id: "1_2x", label: "1-2x por semana" },
+    { id: "3_4x", label: "3-4x por semana" },
+    { id: "5_mais", label: "5 ou mais vezes por semana" },
+  ],
+  acompanhaInfluenciadores: [
+    { id: "sim", label: "Sim" },
+    { id: "nao", label: "Não" },
+  ],
+  acompanhamentoMedico: [
+    { id: "sim", label: "Sim" },
+    { id: "nao", label: "Não" },
+    { id: "prefiro_nao", label: "Prefiro não informar", pinnedEnd: true },
+  ],
+  prescricaoMedica: [
+    { id: "sim", label: "Sim" },
+    { id: "nao", label: "Não" },
+    { id: "prefiro_nao", label: "Prefiro não informar", pinnedEnd: true },
   ],
   gastoMensal: [
     { id: "ate_300", label: "Até R$ 300" },
