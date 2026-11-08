@@ -146,13 +146,4 @@
   });
 
   updateButtonState();
-
-  var dismissed = false;
-  try {
-    dismissed = localStorage.getItem(STORAGE_KEY) === "1";
-  } catch (e) {}
-
-  if (!dismissed) {
-    setTimeout(openModal, 700);
-  }
 })();
